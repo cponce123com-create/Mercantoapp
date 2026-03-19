@@ -31,6 +31,7 @@ export function Navbar() {
             <button 
               className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Abrir menú de navegación"
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -45,7 +46,10 @@ export function Navbar() {
           </div>
 
           {/* Location Selector (Hidden on small mobile) */}
-          <button className="hidden md:flex items-center gap-2 px-4 py-2 hover:bg-muted rounded-full transition-colors duration-200">
+          <button 
+            className="hidden md:flex items-center gap-2 px-4 py-2 hover:bg-muted rounded-full transition-colors duration-200"
+            aria-label="Seleccionar ubicación de entrega"
+          >
             <div className="bg-accent text-primary p-2 rounded-full">
               <MapPin size={18} />
             </div>
@@ -93,6 +97,7 @@ export function Navbar() {
                 <button 
                   onClick={logout}
                   className="hidden sm:flex items-center gap-2 px-3 py-2.5 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200 text-sm font-semibold text-foreground"
+                  aria-label="Cerrar sesión"
                 >
                   <LogOut size={20} className="text-muted-foreground group-hover:text-red-600" />
                 </button>
@@ -106,6 +111,7 @@ export function Navbar() {
             <button 
               onClick={openCart}
               className="relative p-3 bg-muted/50 hover:bg-accent hover:text-primary rounded-xl transition-colors duration-200"
+              aria-label={`Ver carrito con ${itemCount} productos`}
             >
               <ShoppingCart size={22} />
               {itemCount > 0 && (
