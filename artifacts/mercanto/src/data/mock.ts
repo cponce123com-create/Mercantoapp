@@ -37,7 +37,9 @@ export const CATEGORY_CARDS = [
     badge: 'Recojo en tienda',
     gradient: 'from-pink-400 to-rose-500',
     icon: '👗'
-  }
+  },
+];
+
 export const TACORA_ITEMS = [
   {
     id: 1,
@@ -146,5 +148,5 @@ export const TACORA_ITEMS = [
     condition: "Muy Bueno",
     seller: "Lucia B.",
     icon: "📱"
-  }
+  },
 ];
