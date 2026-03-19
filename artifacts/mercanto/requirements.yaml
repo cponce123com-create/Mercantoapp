@@ -1,0 +1,11 @@
+packages:
+  "framer-motion": "For premium smooth animations on page load and scroll"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes without conflicts"
+
+images: []
+
+notes:
+  - Frontend-only implementation with mocked data as requested.
+  - Used CSS gradients and Lucide icons/emojis for imagery to maintain a clean, modern aesthetic without relying on external assets.
+  - Implemented responsive bento-box style layouts.
