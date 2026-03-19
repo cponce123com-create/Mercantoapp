@@ -1,30 +1,94 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useCart } from "@/lib/CartContext";
-import { ArrowLeft, MapPin, CheckCircle, CreditCard, ShoppingBag, Truck } from "lucide-react";
+import { ArrowLeft, MapPin, CheckCircle, CreditCard, ShoppingBag, Truck, User } from "lucide-react";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const [, setLocation] = useLocation();
   const [isSuccess, setIsSuccess] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Form state
+  // Verificar sesión al cargar
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/auth/get-session", {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setIsAuthenticated(!!data?.user);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch {
+        setIsAuthenticated(false);
+      } finally {
+        setAuthChecked(true);
+      }
+    }
+    checkSession();
+  }, []);
+
   const [formData, setFormData] = useState({
-    name: 'Juan Rodriguez',
-    phone: '987654321',
-    deliveryMethod: 'pickup'
+    name: "",
+    phone: "",
+    deliveryMethod: "pickup",
   });
 
-  const storeName = items.length > 0 ? items[0].storeName : '';
+  const storeName = items.length > 0 ? items[0].storeName : "";
   const orderNumber = Math.floor(1000 + Math.random() * 9000);
+
+  // Esperando verificación de auth
+  if (!authChecked) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <p className="text-muted-foreground">Verificando sesión...</p>
+      </div>
+    );
+  }
+
+  // No autenticado — redirigir a login
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+        <User size={64} className="text-muted-foreground/30 mb-6" />
+        <h2 className="text-2xl font-bold mb-2">Inicia sesión para continuar</h2>
+        <p className="text-muted-foreground mb-6">
+          Necesitas una cuenta para realizar un pedido.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setLocation("/login")}
+            className="px-6 py-2 bg-primary text-white rounded-xl font-bold"
+          >
+            Iniciar sesión
+          </button>
+          <button
+            onClick={() => setLocation("/registro")}
+            className="px-6 py-2 border border-primary text-primary rounded-xl font-bold"
+          >
+            Registrarse
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0 && !isSuccess) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
         <ShoppingBag size={64} className="text-muted-foreground/30 mb-6" />
         <h2 className="text-2xl font-bold mb-2">No hay pedido en curso</h2>
-        <p className="text-muted-foreground mb-6">Agrega productos a tu carrito para realizar un pedido.</p>
-        <button onClick={() => setLocation('/')} className="px-6 py-2 bg-primary text-white rounded-xl font-bold">
+        <p className="text-muted-foreground mb-6">
+          Agrega productos a tu carrito para realizar un pedido.
+        </p>
+        <button
+          onClick={() => setLocation("/")}
+          className="px-6 py-2 bg-primary text-white rounded-xl font-bold"
+        >
           Volver al inicio
         </button>
       </div>
@@ -40,24 +104,18 @@ export default function CheckoutPage() {
   if (isSuccess) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4 bg-background relative overflow-hidden">
-        {/* Simple Confetti Effect using pure CSS */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
           {Array.from({ length: 50 }).map((_, i) => {
             const left = `${Math.random() * 100}%`;
             const animDuration = `${Math.random() * 3 + 2}s`;
             const animDelay = `${Math.random() * 2}s`;
-            const colors = ['bg-primary', 'bg-blue-500', 'bg-green-500', 'bg-yellow-400', 'bg-purple-500'];
+            const colors = ["bg-primary", "bg-blue-500", "bg-green-500", "bg-yellow-400", "bg-purple-500"];
             const color = colors[Math.floor(Math.random() * colors.length)];
-            
             return (
-              <div 
+              <div
                 key={i}
                 className={`absolute top-[-10px] w-2 h-2 sm:w-3 sm:h-3 rounded-full ${color} animate-[fall_linear_infinite]`}
-                style={{ 
-                  left, 
-                  animationDuration: animDuration,
-                  animationDelay: animDelay,
-                }}
+                style={{ left, animationDuration: animDuration, animationDelay: animDelay }}
               />
             );
           })}
@@ -77,7 +135,6 @@ export default function CheckoutPage() {
           <p className="text-muted-foreground mb-6">
             La tienda se contactará contigo en breve para coordinar la entrega.
           </p>
-          
           <div className="bg-muted/30 border border-border rounded-2xl p-6 mb-8 text-left">
             <div className="flex justify-between items-center mb-4 pb-4 border-b border-border">
               <span className="text-muted-foreground font-medium">Orden</span>
@@ -94,9 +151,8 @@ export default function CheckoutPage() {
               </span>
             </div>
           </div>
-          
-          <button 
-            onClick={() => setLocation('/')}
+          <button
+            onClick={() => setLocation("/")}
             className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors"
           >
             Volver al inicio
@@ -109,7 +165,6 @@ export default function CheckoutPage() {
   return (
     <div className="bg-background min-h-screen py-8 pb-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        
         <div className="mb-6 flex items-center gap-3">
           <Link href="/" className="p-2 bg-white rounded-full shadow-sm hover:bg-muted transition-colors">
             <ArrowLeft size={20} />
@@ -118,8 +173,6 @@ export default function CheckoutPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-          
-          {/* Form Column */}
           <div className="md:col-span-3 space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-border shadow-sm">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -128,19 +181,19 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Nombre completo</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Teléfono o WhatsApp</label>
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   />
                 </div>
@@ -151,11 +204,10 @@ export default function CheckoutPage() {
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Truck size={18} className="text-primary" /> Opciones de entrega
               </h2>
-              
               <div className="space-y-3">
-                <label className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${formData.deliveryMethod === 'pickup' ? 'border-primary bg-primary/5' : 'border-border hover:border-border/80'}`}>
+                <label className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${formData.deliveryMethod === "pickup" ? "border-primary bg-primary/5" : "border-border hover:border-border/80"}`}>
                   <div className="mt-0.5">
-                    <input type="radio" checked={formData.deliveryMethod === 'pickup'} readOnly className="w-4 h-4 text-primary" />
+                    <input type="radio" checked={formData.deliveryMethod === "pickup"} readOnly className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <span className="block font-bold text-foreground">Recojo en tienda</span>
@@ -166,7 +218,6 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 </label>
-                
                 <label className="flex items-start gap-4 p-4 border-2 border-border/50 bg-muted/20 rounded-xl cursor-not-allowed opacity-60">
                   <div className="mt-0.5">
                     <input type="radio" disabled className="w-4 h-4" />
@@ -193,19 +244,15 @@ export default function CheckoutPage() {
                 <p><strong>Pagas al recibir.</strong> Coordinarás el método de pago directamente con la tienda (Efectivo, Yape, Plin o Tarjeta) al momento de recoger tu pedido.</p>
               </div>
             </div>
-
           </div>
 
-          {/* Summary Column */}
           <div className="md:col-span-2">
             <div className="bg-white p-6 rounded-2xl border border-border shadow-sm sticky top-24">
               <h2 className="text-lg font-bold mb-4 border-b border-border pb-4">Resumen del Pedido</h2>
-              
               <div className="mb-4 text-sm font-medium text-muted-foreground">
                 Tienda: <span className="text-foreground font-bold">{storeName}</span>
               </div>
-              
-              <div className="space-y-4 mb-6 max-h-60 overflow-y-auto pr-2 hide-scrollbar">
+              <div className="space-y-4 mb-6 max-h-60 overflow-y-auto pr-2">
                 {items.map((item) => (
                   <div key={item.id} className="flex justify-between items-start gap-4">
                     <div className="flex gap-3">
@@ -217,13 +264,10 @@ export default function CheckoutPage() {
                         <span className="text-xs text-muted-foreground">Cant: {item.quantity}</span>
                       </div>
                     </div>
-                    <span className="font-bold text-sm shrink-0">
-                      S/ {(item.price * item.quantity).toFixed(2)}
-                    </span>
+                    <span className="font-bold text-sm shrink-0">S/ {(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
-              
               <div className="border-t border-border pt-4 space-y-3 mb-6">
                 <div className="flex justify-between text-muted-foreground text-sm">
                   <span>Subtotal</span>
@@ -238,9 +282,8 @@ export default function CheckoutPage() {
                   <span className="text-primary">S/ {total.toFixed(2)}</span>
                 </div>
               </div>
-              
               <form onSubmit={handleConfirm}>
-                <button 
+                <button
                   type="submit"
                   className="w-full py-4 bg-primary text-white font-bold text-lg rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                 >
@@ -252,7 +295,6 @@ export default function CheckoutPage() {
               </p>
             </div>
           </div>
-
         </div>
       </div>
     </div>
