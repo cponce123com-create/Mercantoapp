@@ -18,7 +18,7 @@ export default function Stores() {
   const { data, isLoading, error, refetch } = useListStores({
     status: 'approved',
     is_active: true,
-    limit: 50
+    limit: 20
   });
 
   useEffect(() => {

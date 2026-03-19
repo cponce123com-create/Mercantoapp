@@ -55,9 +55,9 @@ export default function MapPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
 
-  // Lima, Peru coordinates
-  const defaultCenter: [number, number] = [-12.0646, -77.0465];
-  const [mapCenter, setMapCenter] = useState<[number, number]>(defaultCenter);
+  // Coordenadas de San Ramón, Chanchamayo, Junín
+  const SAN_RAMON_CENTER: [number, number] = [-11.1245, -75.3582];
+  const [mapCenter, setMapCenter] = useState<[number, number]>(SAN_RAMON_CENTER);
 
   const { data, isLoading, error, refetch } = useListStores({
     status: 'approved',
@@ -67,9 +67,16 @@ export default function MapPage() {
 
   const stores = data?.data || [];
 
+  // Función para generar coordenadas deterministas en San Ramón basadas en el ID
+  const getStoreCoordinates = (id: number): [number, number] => {
+    // Generar un desplazamiento pequeño basado en el ID para que no todas estén en el mismo punto
+    const latOffset = (Math.sin(id * 123.456) * 0.005);
+    const lngOffset = (Math.cos(id * 456.789) * 0.005);
+    return [SAN_RAMON_CENTER[0] + latOffset, SAN_RAMON_CENTER[1] + lngOffset];
+  };
+
   const filteredStores = useMemo(() => {
     return stores.filter(store => {
-      // Mapeo simple de categorías para el mock visual
       const categoryMap: Record<string, string> = {
         'restaurants': 'Restaurante',
         'fruits': 'Frutas y Verduras',
@@ -91,10 +98,7 @@ export default function MapPage() {
 
   const handleStoreSelect = (store: any) => {
     setSelectedStoreId(store.id);
-    // En un escenario real, la API devolvería lat/lng. Aquí usamos valores por defecto o simulados.
-    const lat = -12.0646 + (Math.random() - 0.5) * 0.05;
-    const lng = -77.0465 + (Math.random() - 0.5) * 0.05;
-    setMapCenter([lat, lng]);
+    setMapCenter(getStoreCoordinates(store.id));
   };
 
   return (
@@ -108,7 +112,7 @@ export default function MapPage() {
             </div>
             <input
               type="text"
-              placeholder="Buscar tiendas en el mapa..."
+              placeholder="Buscar tiendas en San Ramón..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-muted/50 border border-transparent focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 rounded-xl text-sm transition-all outline-none"
@@ -140,7 +144,7 @@ export default function MapPage() {
           <div className="p-4 border-b border-border bg-muted/20">
             <h2 className="font-bold text-lg flex items-center gap-2">
               <MapPin size={18} className="text-primary" /> 
-              {isLoading ? 'Cargando...' : `${filteredStores.length} Tiendas encontradas`}
+              {isLoading ? 'Cargando...' : `${filteredStores.length} Tiendas en San Ramón`}
             </h2>
           </div>
           
@@ -185,7 +189,7 @@ export default function MapPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-foreground truncate">{store.name}</h3>
-                      <p className="text-xs text-muted-foreground mb-2">Tienda</p>
+                      <p className="text-xs text-muted-foreground mb-2">San Ramón, Chanchamayo</p>
                       <div className="flex justify-between items-center">
                         <span className="text-xs bg-muted px-2 py-0.5 rounded-md font-medium">Abierto</span>
                         <button 
@@ -209,8 +213,8 @@ export default function MapPage() {
         {/* Map Container */}
         <div className="flex-1 h-full z-0 relative">
           <MapContainer 
-            center={defaultCenter} 
-            zoom={14} 
+            center={SAN_RAMON_CENTER} 
+            zoom={15} 
             className="w-full h-full"
             zoomControl={false}
           >
@@ -221,16 +225,13 @@ export default function MapPage() {
             />
             
             {filteredStores.map(store => {
-              // Simular coordenadas si no existen
-              const lat = -12.0646 + (Math.random() - 0.5) * 0.05;
-              const lng = -77.0465 + (Math.random() - 0.5) * 0.05;
-              
+              const position = getStoreCoordinates(store.id);
               const customIcon = createCustomIcon("bg-slate-700", '🏪');
               
               return (
                 <Marker 
                   key={store.id} 
-                  position={[lat, lng]}
+                  position={position}
                   icon={customIcon}
                   eventHandlers={{
                     click: () => {
@@ -249,7 +250,7 @@ export default function MapPage() {
                         </div>
                       </div>
                       <h3 className="font-bold text-base text-center mt-3 mb-1">{store.name}</h3>
-                      <p className="text-xs text-muted-foreground text-center mb-3">Tienda</p>
+                      <p className="text-xs text-muted-foreground text-center mb-3">San Ramón</p>
                       <button 
                         onClick={() => setLocation(`/tienda/${store.id}`)}
                         className="w-full py-1.5 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors"

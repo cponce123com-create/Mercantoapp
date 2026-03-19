@@ -14,7 +14,7 @@ export default function Home() {
   const { data, isLoading, error, refetch } = useListStores({
     status: 'approved',
     is_active: true,
-    limit: 8
+    limit: 20
   });
 
   const stores = data?.data || [];

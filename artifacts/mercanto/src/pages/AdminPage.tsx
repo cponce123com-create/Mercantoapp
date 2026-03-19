@@ -22,14 +22,13 @@ import {
   Edit2,
   Save,
   X,
-} from "lucide-react";
-import { useAuth } from "@/lib/AuthContext";
+} from "lucide-import { useAuth, API_URL } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 // ============================================================================
 // TIPOS
-// ============================================================================
-interface DashboardStore {
+// ============================================================================{
   total: number;
   pending: number;
   approved: number;
@@ -115,12 +114,19 @@ interface Pagination {
 // ============================================================================
 // HELPERS
 // ============================================================================
-const apiFetch = async (url: string, options?: RequestInit) => {
+const apiFetch = async (endpoint: string, options?: RequestInit) => {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;
   const res = await fetch(url, {
     credentials: "include",
     headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) },
     ...options,
   });
+  
+  const contentType = res.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    throw new Error(`Error del servidor: Se esperaba JSON pero se recibió ${contentType || 'nada'}. Verifica la URL de la API.`);
+  }
+
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Error en la solicitud");
   return data;
