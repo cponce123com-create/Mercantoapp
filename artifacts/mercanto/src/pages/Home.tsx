@@ -1,8 +1,17 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Check, MapPin, Search, ShieldCheck, ShoppingBag, Store, Tag } from "lucide-react";
 import { CATEGORY_CARDS, FEATURED_STORES } from "@/data/mock";
+import { Link, useLocation } from "wouter";
+import { useCategory } from "@/lib/CategoryContext";
 
 export default function Home() {
+  const [, setLocation] = useLocation();
+  const { activeCategory } = useCategory();
+
+  const filteredStores = activeCategory === 'all' 
+    ? FEATURED_STORES 
+    : FEATURED_STORES.filter(store => store.categoryId === activeCategory);
+
   return (
     <div className="w-full">
       {/* HERO SECTION */}
@@ -41,11 +50,11 @@ export default function Home() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 mb-10">
-                <button className="px-8 py-4 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold text-lg shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2 group">
+                <button onClick={() => setLocation('/tiendas')} className="px-8 py-4 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold text-lg shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2 group">
                   <Store size={20} className="group-hover:scale-110 transition-transform" />
                   Explorar tiendas
                 </button>
-                <button className="px-8 py-4 bg-secondary hover:bg-secondary/90 text-white rounded-2xl font-bold text-lg shadow-xl shadow-secondary/20 hover:shadow-2xl hover:shadow-secondary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2 group">
+                <button onClick={() => setLocation('/tacora')} className="px-8 py-4 bg-secondary hover:bg-secondary/90 text-white rounded-2xl font-bold text-lg shadow-xl shadow-secondary/20 hover:shadow-2xl hover:shadow-secondary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2 group">
                   <Tag size={20} className="group-hover:scale-110 transition-transform" />
                   Explorar Tacora
                 </button>
@@ -137,7 +146,7 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">Compra por categoría</h2>
               <p className="text-muted-foreground mt-2 text-lg">Encuentra exactamente lo que buscas en tu zona.</p>
             </div>
-            <button className="hidden sm:flex items-center gap-2 text-primary font-bold hover:text-primary/80 transition-colors group">
+            <button onClick={() => setLocation('/tiendas')} className="hidden sm:flex items-center gap-2 text-primary font-bold hover:text-primary/80 transition-colors group">
               Ver todas <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
@@ -146,6 +155,7 @@ export default function Home() {
             {CATEGORY_CARDS.map((cat) => (
               <button 
                 key={cat.id}
+                onClick={() => setLocation(`/tiendas?categoria=${cat.id}`)}
                 className="group relative rounded-3xl overflow-hidden aspect-[4/3] text-left transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-primary/20"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-90 group-hover:opacity-100 transition-opacity duration-300`}></div>
@@ -169,7 +179,7 @@ export default function Home() {
             ))}
 
             {/* Special Promo Card */}
-            <button className="group relative rounded-3xl overflow-hidden aspect-[4/3] sm:col-span-2 lg:col-span-2 xl:col-span-4 lg:aspect-auto xl:h-64 text-left transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none">
+            <button onClick={() => setLocation('/tacora')} className="group relative rounded-3xl overflow-hidden aspect-[4/3] sm:col-span-2 lg:col-span-2 xl:col-span-4 lg:aspect-auto xl:h-64 text-left transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none">
               <div className="absolute inset-0 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600"></div>
               <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-30"></div>
               
@@ -198,7 +208,7 @@ export default function Home() {
             </button>
           </div>
           
-          <button className="sm:hidden w-full mt-6 py-4 bg-muted text-foreground font-bold rounded-2xl flex items-center justify-center gap-2">
+          <button onClick={() => setLocation('/tiendas')} className="sm:hidden w-full mt-6 py-4 bg-muted text-foreground font-bold rounded-2xl flex items-center justify-center gap-2">
             Ver todas las categorías <ArrowRight size={18} />
           </button>
         </div>
@@ -212,15 +222,16 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">Tiendas destacadas en tu distrito</h2>
               <p className="text-muted-foreground mt-2 text-lg">Los negocios más confiables y populares cerca de ti.</p>
             </div>
-            <button className="hidden sm:flex items-center gap-2 text-primary font-bold hover:text-primary/80 transition-colors group">
+            <button onClick={() => setLocation('/tiendas')} className="hidden sm:flex items-center gap-2 text-primary font-bold hover:text-primary/80 transition-colors group">
               Ver todas <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
 
           <div className="flex overflow-x-auto hide-scrollbar snap-x gap-6 pb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
-            {FEATURED_STORES.map((store) => (
+            {filteredStores.map((store) => (
               <button 
                 key={store.id}
+                onClick={() => setLocation(`/tienda/${store.id}`)}
                 className="group flex-shrink-0 w-72 sm:w-80 bg-white rounded-3xl overflow-hidden border border-border/60 shadow-md shadow-black/5 hover:shadow-xl hover:border-primary/30 transition-all duration-300 snap-start text-left focus:outline-none focus:ring-4 focus:ring-primary/20"
               >
                 {/* Visual Header */}
@@ -260,7 +271,7 @@ export default function Home() {
             ))}
             
             {/* View More Card */}
-            <button className="group flex-shrink-0 w-72 sm:w-80 bg-primary/5 rounded-3xl border-2 border-dashed border-primary/20 hover:border-primary hover:bg-primary/10 transition-colors duration-300 snap-start flex flex-col items-center justify-center p-8 text-primary">
+            <button onClick={() => setLocation('/tiendas')} className="group flex-shrink-0 w-72 sm:w-80 bg-primary/5 rounded-3xl border-2 border-dashed border-primary/20 hover:border-primary hover:bg-primary/10 transition-colors duration-300 snap-start flex flex-col items-center justify-center p-8 text-primary">
               <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <ArrowRight size={28} />
               </div>
@@ -276,7 +287,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">¿Cómo funciona Mercanto?</h2>
-            <p className="text-muted-foreground mt-4 text-lg">Tu marketplace local en 3 simples pasos. Fácil, rápido y directo con el vendedor.</p>
+            <p className="text-muted-foreground mt-4 text-lg">Tu marketplace local en 3 simple pasos. Fácil, rápido y directo con el vendedor.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">

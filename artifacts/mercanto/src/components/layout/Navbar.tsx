@@ -3,9 +3,10 @@ import { Link } from "wouter";
 import { MapPin, Search, ShoppingCart, User, ChevronDown, Menu, X } from "lucide-react";
 import { CATEGORIES } from "@/data/mock";
 import { cn } from "@/lib/utils";
+import { useCategory } from "@/lib/CategoryContext";
 
 export function Navbar() {
-  const [activeCategory, setActiveCategory] = useState('all');
+  const { activeCategory, setActiveCategory } = useCategory();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (

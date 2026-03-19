@@ -1,4 +1,5 @@
 import { ShoppingCart } from "lucide-react";
+import { Link } from "wouter";
 
 export function Footer() {
   return (
@@ -7,14 +8,14 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           
           <div className="md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="bg-primary text-white p-1.5 rounded-xl">
+            <Link href="/" className="flex items-center gap-2 mb-4 cursor-pointer group">
+              <div className="bg-primary text-white p-1.5 rounded-xl group-hover:scale-105 transition-transform">
                 <ShoppingCart size={24} strokeWidth={2.5} />
               </div>
-              <span className="font-display font-bold text-2xl tracking-tight text-white">
+              <span className="font-display font-bold text-2xl tracking-tight text-white group-hover:text-primary/90 transition-colors">
                 mercanto
               </span>
-            </div>
+            </Link>
             <p className="text-muted-foreground text-sm leading-relaxed mb-6">
               El marketplace local que conecta tu distrito. Compra rápido, seguro y apoya a los negocios de tu zona.
             </p>
@@ -23,10 +24,10 @@ export function Footer() {
           <div>
             <h4 className="font-bold text-lg mb-4 text-white">Sobre nosotros</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><button className="hover:text-primary transition-colors">¿Cómo funciona?</button></li>
-              <li><button className="hover:text-primary transition-colors">Preguntas frecuentes</button></li>
-              <li><button className="hover:text-primary transition-colors">Términos y condiciones</button></li>
-              <li><button className="hover:text-primary transition-colors">Política de privacidad</button></li>
+              <li><Link href="/" className="hover:text-primary transition-colors cursor-pointer">Inicio</Link></li>
+              <li><Link href="/tiendas" className="hover:text-primary transition-colors cursor-pointer">Tiendas</Link></li>
+              <li><Link href="/tacora" className="hover:text-primary transition-colors cursor-pointer">Tacora</Link></li>
+              <li><button className="hover:text-primary transition-colors">Sobre Mercanto</button></li>
             </ul>
           </div>
 
