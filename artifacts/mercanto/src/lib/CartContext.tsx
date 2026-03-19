@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 
 export type CartItem = {
   id: string;
@@ -34,56 +34,87 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const CART_STORAGE_KEY = 'mercanto_cart_v1';
+
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  // Inicializar estado desde localStorage
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem(CART_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Error loading cart from localStorage', e);
+      return [];
+    }
+  });
+
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [conflictStore, setConflictStore] = useState<Store | null>(null);
   const [pendingItem, setPendingItem] = useState<{ product: any; store: Store } | null>(null);
 
+  // Persistir cambios en localStorage
+  useEffect(() => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  }, [items]);
+
   const currentStoreId = items.length > 0 ? items[0].storeId : null;
   const currentStoreName = items.length > 0 ? items[0].storeName : '';
 
-  const addItem = (product: any, store: Store) => {
-    if (currentStoreId && currentStoreId !== store.id) {
-      setConflictStore(store);
-      setPendingItem({ product, store });
-      return;
-    }
+  const addItem = useCallback((product: any, store: Store) => {
+    const productId = product.id.toString();
+    const storeId = store.id.toString();
 
     setItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.productId === product.id);
+      // Validación de tienda única
+      const activeStoreId = prevItems.length > 0 ? prevItems[0].storeId : null;
+      
+      if (activeStoreId && activeStoreId !== storeId) {
+        setConflictStore(store);
+        setPendingItem({ product, store });
+        return prevItems;
+      }
+
+      const existingItem = prevItems.find((item) => item.productId === productId);
       if (existingItem) {
         return prevItems.map((item) =>
-          item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item
         );
       } else {
         return [
           ...prevItems,
           {
-            id: Math.random().toString(36).substring(7),
-            productId: product.id,
-            storeId: store.id,
+            // ID estable basado en store y product para evitar duplicados accidentales
+            id: `${storeId}-${productId}`,
+            productId: productId,
+            storeId: storeId,
             storeName: store.name,
             name: product.name,
-            price: product.price,
+            price: Number(product.price),
             quantity: 1,
-            icon: product.icon,
+            icon: product.icon || '📦',
           },
         ];
       }
     });
-    setIsCartOpen(true);
-  };
+    
+    // Solo abrir el carrito si no hay conflicto
+    const activeStoreId = items.length > 0 ? items[0].storeId : null;
+    if (!activeStoreId || activeStoreId === storeId) {
+      setIsCartOpen(true);
+    }
+  }, [items]);
 
-  const removeItem = (productId: string) => {
-    setItems((prevItems) => prevItems.filter((item) => item.productId !== productId));
-  };
+  const removeItem = useCallback((productId: string) => {
+    setItems((prevItems) => prevItems.filter((item) => item.productId !== productId.toString()));
+  }, []);
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const updateQuantity = useCallback((productId: string, delta: number) => {
+    const pId = productId.toString();
     setItems((prevItems) =>
       prevItems
         .map((item) => {
-          if (item.productId === productId) {
+          if (item.productId === pId) {
             const newQuantity = item.quantity + delta;
             return { ...item, quantity: newQuantity };
           }
@@ -91,23 +122,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
         })
         .filter((item) => item.quantity > 0)
     );
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setItems([]);
-  };
+  }, []);
 
-  const resolveConflict = (accept: boolean) => {
+  const resolveConflict = useCallback((accept: boolean) => {
     if (accept && pendingItem) {
-      clearCart();
-      // Add pending item on next tick to avoid state mixing
-      setTimeout(() => {
-        addItem(pendingItem.product, pendingItem.store);
-      }, 0);
+      const { product, store } = pendingItem;
+      const productId = product.id.toString();
+      const storeId = store.id.toString();
+
+      // Reemplazar el carrito directamente con el nuevo item
+      // Esto evita el uso de setTimeout al manejar la lógica en un solo paso
+      setItems([
+        {
+          id: `${storeId}-${productId}`,
+          productId: productId,
+          storeId: storeId,
+          storeName: store.name,
+          name: product.name,
+          price: Number(product.price),
+          quantity: 1,
+          icon: product.icon || '📦',
+        }
+      ]);
+      setIsCartOpen(true);
     }
     setConflictStore(null);
     setPendingItem(null);
-  };
+  }, [pendingItem]);
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
