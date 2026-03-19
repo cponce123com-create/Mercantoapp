@@ -47,3 +47,8 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Replit config files
+.replit
+.replitignore
+replit.md
