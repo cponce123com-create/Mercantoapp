@@ -1,13 +1,21 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { MapPin, Search, ShoppingCart, User, ChevronDown, Menu, X } from "lucide-react";
 import { CATEGORIES } from "@/data/mock";
 import { cn } from "@/lib/utils";
 import { useCategory } from "@/lib/CategoryContext";
+import { useCart } from "@/lib/CartContext";
 
 export function Navbar() {
   const { activeCategory, setActiveCategory } = useCategory();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { openCart, itemCount } = useCart();
+  const [location] = useLocation();
+
+  // Hide regular navbar on admin page
+  if (location.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-border/50 shadow-sm backdrop-blur-md bg-white/90">
@@ -63,13 +71,24 @@ export function Navbar() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
-            <button className="hidden sm:flex items-center gap-2 px-4 py-2.5 hover:bg-muted rounded-xl transition-colors duration-200 text-sm font-semibold text-foreground">
+            <Link href="/mapa" className="hidden lg:flex items-center gap-2 px-3 py-2.5 hover:bg-muted rounded-xl transition-colors duration-200 text-sm font-semibold text-foreground">
+              <MapPin size={20} className="text-muted-foreground" />
+              <span>Mapa</span>
+            </Link>
+            <Link href="/perfil" className="hidden sm:flex items-center gap-2 px-3 py-2.5 hover:bg-muted rounded-xl transition-colors duration-200 text-sm font-semibold text-foreground">
               <User size={20} className="text-muted-foreground" />
-              <span>Pedidos</span>
-            </button>
-            <button className="relative p-3 bg-muted/50 hover:bg-accent hover:text-primary rounded-xl transition-colors duration-200">
+              <span>Mi Perfil</span>
+            </Link>
+            <button 
+              onClick={openCart}
+              className="relative p-3 bg-muted/50 hover:bg-accent hover:text-primary rounded-xl transition-colors duration-200"
+            >
               <ShoppingCart size={22} />
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-primary rounded-full border-2 border-white"></span>
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-[10px] font-bold text-white bg-primary rounded-full border-2 border-white">
+                  {itemCount}
+                </span>
+              )}
             </button>
           </div>
         </div>

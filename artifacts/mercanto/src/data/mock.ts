@@ -49,7 +49,8 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-slate-700 to-slate-900',
     icon: '🏪',
-    description: 'Encuentra de todo para tu hogar a los mejores precios.'
+    description: 'Encuentra de todo para tu hogar a los mejores precios.',
+    lat: -12.0646, lng: -77.0465
   },
   {
     id: '2',
@@ -59,7 +60,8 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-emerald-500 to-green-600',
     icon: '🍎',
-    description: 'Frutas y verduras frescas del campo a tu mesa.'
+    description: 'Frutas y verduras frescas del campo a tu mesa.',
+    lat: -12.0732, lng: -77.0832
   },
   {
     id: '3',
@@ -69,7 +71,8 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-orange-500 to-red-600',
     icon: '🍕',
-    description: 'La mejor pizza artesanal de la ciudad.'
+    description: 'La mejor pizza artesanal de la ciudad.',
+    lat: -12.0551, lng: -77.0347
   },
   {
     id: '4',
@@ -79,7 +82,8 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-fuchsia-500 to-pink-600',
     icon: '👕',
-    description: 'Moda actual y accesorios para toda la familia.'
+    description: 'Moda actual y accesorios para toda la familia.',
+    lat: -12.0889, lng: -77.0621
   },
   {
     id: '5',
@@ -89,7 +93,8 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-teal-400 to-teal-600',
     icon: '💊',
-    description: 'Cuidando de tu salud las 24 horas.'
+    description: 'Cuidando de tu salud las 24 horas.',
+    lat: -12.0425, lng: -77.0284
   },
   {
     id: '6',
@@ -99,7 +104,8 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-amber-600 to-orange-700',
     icon: '🥐',
-    description: 'Pan fresco, postres y pasteles deliciosos.'
+    description: 'Pan fresco, postres y pasteles deliciosos.',
+    lat: -12.0677, lng: -77.0754
   },
   {
     id: '7',
@@ -109,7 +115,8 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-blue-600 to-indigo-800',
     icon: '📱',
-    description: 'Gadgets, accesorios y reparaciones.'
+    description: 'Gadgets, accesorios y reparaciones.',
+    lat: -12.0812, lng: -77.0512
   },
   {
     id: '8',
@@ -119,7 +126,8 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-yellow-500 to-amber-600',
     icon: '🏬',
-    description: 'Tu bodega de confianza a la vuelta de la esquina.'
+    description: 'Tu bodega de confianza a la vuelta de la esquina.',
+    lat: -12.0934, lng: -77.0398
   },
   {
     id: '9',
@@ -129,7 +137,8 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-red-600 to-rose-800',
     icon: '🍜',
-    description: 'El mejor sabor oriental.'
+    description: 'El mejor sabor oriental.',
+    lat: -12.0503, lng: -77.0689
   },
   {
     id: '10',
@@ -139,7 +148,8 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-stone-500 to-stone-700',
     icon: '🛋️',
-    description: 'Decora tu casa con estilo.'
+    description: 'Decora tu casa con estilo.',
+    lat: -12.0745, lng: -77.0276
   },
   {
     id: '11',
@@ -149,7 +159,8 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-lime-400 to-green-600',
     icon: '🍇',
-    description: 'Lo mejor y más sano para tu familia.'
+    description: 'Lo mejor y más sano para tu familia.',
+    lat: -12.0621, lng: -77.0934
   },
   {
     id: '12',
@@ -159,7 +170,96 @@ export const FEATURED_STORES = [
     badge: 'Recojo en tienda',
     gradient: 'from-purple-500 to-violet-700',
     icon: '👗',
-    description: 'Vestidos y trajes para ocasiones especiales.'
+    description: 'Vestidos y trajes para ocasiones especiales.',
+    lat: -12.0856, lng: -77.0745
+  },
+  {
+    id: '13',
+    name: 'Cevichería El Marisco',
+    category: 'Restaurante',
+    categoryId: 'restaurants',
+    badge: 'Recojo en tienda',
+    gradient: 'from-cyan-500 to-blue-600',
+    icon: '🦐',
+    description: 'El mejor ceviche del distrito.',
+    lat: -12.0598, lng: -77.0523
+  },
+  {
+    id: '14',
+    name: 'Librería Cultura',
+    category: 'Tiendas',
+    categoryId: 'stores',
+    badge: 'Recojo en tienda',
+    gradient: 'from-orange-400 to-amber-500',
+    icon: '📚',
+    description: 'Libros, útiles y papelería.',
+    lat: -12.0712, lng: -77.0389
+  },
+  {
+    id: '15',
+    name: 'Gym FitZone',
+    category: 'Salud',
+    categoryId: 'pharmacy',
+    badge: 'Recojo en tienda',
+    gradient: 'from-green-600 to-emerald-800',
+    icon: '💪',
+    description: 'Suplementos y equipos deportivos.',
+    lat: -12.0467, lng: -77.0812
+  },
+  {
+    id: '16',
+    name: 'Heladería Frío Frío',
+    category: 'Restaurante',
+    categoryId: 'restaurants',
+    badge: 'Recojo en tienda',
+    gradient: 'from-sky-300 to-blue-400',
+    icon: '🍦',
+    description: 'Helados artesanales y jugos naturales.',
+    lat: -12.0923, lng: -77.0567
+  },
+  {
+    id: '17',
+    name: 'Ferretería El Clavo',
+    category: 'Hogar',
+    categoryId: 'home',
+    badge: 'Recojo en tienda',
+    gradient: 'from-gray-600 to-gray-800',
+    icon: '🔧',
+    description: 'Todo para tus proyectos del hogar.',
+    lat: -12.0834, lng: -77.0234
+  },
+  {
+    id: '18',
+    name: 'Pet Shop Amigos',
+    category: 'Tiendas',
+    categoryId: 'stores',
+    badge: 'Recojo en tienda',
+    gradient: 'from-yellow-400 to-orange-500',
+    icon: '🐾',
+    description: 'Todo para tus mascotas.',
+    lat: -12.0545, lng: -77.0678
+  },
+  {
+    id: '19',
+    name: 'Cafetería Aroma',
+    category: 'Restaurante',
+    categoryId: 'restaurants',
+    badge: 'Recojo en tienda',
+    gradient: 'from-amber-800 to-yellow-900',
+    icon: '☕',
+    description: 'Café artesanal y repostería.',
+    lat: -12.0689, lng: -77.0445
+  },
+  {
+    id: '20',
+    name: 'Optica Visión',
+    category: 'Salud',
+    categoryId: 'pharmacy',
+    badge: 'Recojo en tienda',
+    gradient: 'from-blue-400 to-indigo-600',
+    icon: '👓',
+    description: 'Lentes y exámenes visuales.',
+    lat: -12.0778, lng: -77.0891
   }
 ];
 
@@ -190,6 +290,125 @@ export const PRODUCTS = [
   { id: 'p22', storeId: '3', name: 'Gaseosa 1.5L', price: 9.00, icon: '🥤', category: 'Bebidas' },
   { id: 'p23', storeId: '3', name: 'Ensalada Fresca', price: 15.00, icon: '🥗', category: 'Entradas' },
   { id: 'p24', storeId: '3', name: 'Tiramisú', price: 12.00, icon: '🍰', category: 'Postres' },
+  
+  { id: 'p25', storeId: '4', name: 'Polera Básica Blanca', price: 25.00, icon: '👕', category: 'Ropa' },
+  { id: 'p26', storeId: '4', name: 'Jean Slim Fit', price: 65.00, icon: '👖', category: 'Ropa' },
+  { id: 'p27', storeId: '4', name: 'Blusa Floral', price: 45.00, icon: '👚', category: 'Ropa' },
+  { id: 'p28', storeId: '4', name: 'Zapatillas Casual', price: 89.00, icon: '👟', category: 'Calzado' },
+  { id: 'p29', storeId: '4', name: 'Cinturón Cuero', price: 35.00, icon: '🥋', category: 'Accesorios' },
+  { id: 'p30', storeId: '4', name: 'Bolso de Mano', price: 55.00, icon: '👜', category: 'Accesorios' },
+
+  { id: 'p31', storeId: '5', name: 'Paracetamol 500mg', price: 5.50, icon: '💊', category: 'Medicinas' },
+  { id: 'p32', storeId: '5', name: 'Vitamina C 1000mg', price: 18.00, icon: '💊', category: 'Suplementos' },
+  { id: 'p33', storeId: '5', name: 'Alcohol 70° 500ml', price: 8.00, icon: '🧴', category: 'Botiquín' },
+  { id: 'p34', storeId: '5', name: 'Mascarillas x10', price: 12.00, icon: '😷', category: 'Cuidado' },
+  { id: 'p35', storeId: '5', name: 'Termómetro Digital', price: 25.00, icon: '🌡️', category: 'Equipos' },
+  { id: 'p36', storeId: '5', name: 'Ibuprofeno 400mg', price: 6.00, icon: '💊', category: 'Medicinas' },
+
+  { id: 'p37', storeId: '6', name: 'Pan Francés x10', price: 4.00, icon: '🥖', category: 'Panadería' },
+  { id: 'p38', storeId: '6', name: 'Torta de Chocolate', price: 45.00, icon: '🎂', category: 'Pastelería' },
+  { id: 'p39', storeId: '6', name: 'Empanada de Carne', price: 5.00, icon: '🥟', category: 'Snacks' },
+  { id: 'p40', storeId: '6', name: 'Keke de Vainilla', price: 15.00, icon: '🍰', category: 'Pastelería' },
+  { id: 'p41', storeId: '6', name: 'Croissant x4', price: 12.00, icon: '🥐', category: 'Panadería' },
+  { id: 'p42', storeId: '6', name: 'Galletas de Avena', price: 8.00, icon: '🍪', category: 'Pastelería' },
+
+  { id: 'p43', storeId: '7', name: 'Audífonos Bluetooth', price: 89.00, icon: '🎧', category: 'Audio' },
+  { id: 'p44', storeId: '7', name: 'Cargador Rápido', price: 35.00, icon: '🔌', category: 'Accesorios' },
+  { id: 'p45', storeId: '7', name: 'Funda para Celular', price: 20.00, icon: '📱', category: 'Accesorios' },
+  { id: 'p46', storeId: '7', name: 'Powerbank 10000mAh', price: 65.00, icon: '🔋', category: 'Baterías' },
+  { id: 'p47', storeId: '7', name: 'Mouse Inalámbrico', price: 45.00, icon: '🖱️', category: 'Computación' },
+  { id: 'p48', storeId: '7', name: 'Cable USB-C', price: 15.00, icon: '🔌', category: 'Accesorios' },
+
+  { id: 'p49', storeId: '8', name: 'Galletas Soda', price: 1.50, icon: '🍪', category: 'Snacks' },
+  { id: 'p50', storeId: '8', name: 'Yogurt Fresa', price: 4.50, icon: '🥤', category: 'Lácteos' },
+  { id: 'p51', storeId: '8', name: 'Detergente Polvo', price: 6.00, icon: '🧼', category: 'Limpieza' },
+  { id: 'p52', storeId: '8', name: 'Papel Higiénico x4', price: 5.50, icon: '🧻', category: 'Hogar' },
+  { id: 'p53', storeId: '8', name: 'Agua Mineral 2.5L', price: 3.50, icon: '💧', category: 'Bebidas' },
+  { id: 'p54', storeId: '8', name: 'Jabón de Tocador', price: 2.50, icon: '🧼', category: 'Aseo' },
+
+  { id: 'p55', storeId: '9', name: 'Arroz Chaufa', price: 18.00, icon: '🍚', category: 'Platos' },
+  { id: 'p56', storeId: '9', name: 'Sopa Wantán', price: 12.00, icon: '🥣', category: 'Sopas' },
+  { id: 'p57', storeId: '9', name: 'Aeropuerto', price: 22.00, icon: '🍛', category: 'Platos' },
+  { id: 'p58', storeId: '9', name: 'Wantán Frito x6', price: 10.00, icon: '🥟', category: 'Entradas' },
+  { id: 'p59', storeId: '9', name: 'Tallarín Saltado', price: 20.00, icon: '🍜', category: 'Platos' },
+  { id: 'p60', storeId: '9', name: 'Chijaukay', price: 24.00, icon: '🍗', category: 'Platos' },
+
+  { id: 'p61', storeId: '10', name: 'Cojín Decorativo', price: 25.00, icon: '🛋️', category: 'Decoración' },
+  { id: 'p62', storeId: '10', name: 'Lámpara de Mesa', price: 45.00, icon: '💡', category: 'Iluminación' },
+  { id: 'p63', storeId: '10', name: 'Manta Polar', price: 35.00, icon: '🛏️', category: 'Dormitorio' },
+  { id: 'p64', storeId: '10', name: 'Cuadro Abstracto', price: 60.00, icon: '🖼️', category: 'Decoración' },
+  { id: 'p65', storeId: '10', name: 'Florero Cerámica', price: 28.00, icon: '🏺', category: 'Decoración' },
+  { id: 'p66', storeId: '10', name: 'Alfombra Pequeña', price: 55.00, icon: '🊯', category: 'Pisos' },
+
+  { id: 'p67', storeId: '11', name: 'Uva Borgoña x Kg', price: 7.00, icon: '🍇', category: 'Frutas' },
+  { id: 'p68', storeId: '11', name: 'Fresa x Kg', price: 8.50, icon: '🍓', category: 'Frutas' },
+  { id: 'p69', storeId: '11', name: 'Mango x Kg', price: 5.00, icon: '🥭', category: 'Frutas' },
+  { id: 'p70', storeId: '11', name: 'Sandía x Kg', price: 4.50, icon: '🍉', category: 'Frutas' },
+  { id: 'p71', storeId: '11', name: 'Piña x Kg', price: 3.00, icon: '🍍', category: 'Frutas' },
+  { id: 'p72', storeId: '11', name: 'Durazno x Kg', price: 6.00, icon: '🍑', category: 'Frutas' },
+
+  { id: 'p73', storeId: '12', name: 'Vestido de Noche', price: 120.00, icon: '👗', category: 'Ropa' },
+  { id: 'p74', storeId: '12', name: 'Traje de Baño', price: 45.00, icon: '🩱', category: 'Playa' },
+  { id: 'p75', storeId: '12', name: 'Sombrero de Sol', price: 25.00, icon: '👒', category: 'Accesorios' },
+  { id: 'p76', storeId: '12', name: 'Collar de Perlas', price: 35.00, icon: '📿', category: 'Joyería' },
+  { id: 'p77', storeId: '12', name: 'Tacones Altos', price: 85.00, icon: '👠', category: 'Calzado' },
+  { id: 'p78', storeId: '12', name: 'Cartera de Fiesta', price: 65.00, icon: '👛', category: 'Accesorios' },
+
+  { id: 'p79', storeId: '13', name: 'Ceviche Clásico', price: 25.00, icon: '🐟', category: 'Pescados' },
+  { id: 'p80', storeId: '13', name: 'Arroz con Mariscos', price: 28.00, icon: '🦐', category: 'Mariscos' },
+  { id: 'p81', storeId: '13', name: 'Chicharrón de Pescado', price: 22.00, icon: '🍤', category: 'Pescados' },
+  { id: 'p82', storeId: '13', name: 'Leche de Tigre', price: 12.00, icon: '🥛', category: 'Entradas' },
+  { id: 'p83', storeId: '13', name: 'Causa Limeña', price: 15.00, icon: '🥔', category: 'Entradas' },
+  { id: 'p84', storeId: '13', name: 'Chicha Morada 1L', price: 10.00, icon: '🥤', category: 'Bebidas' },
+
+  { id: 'p85', storeId: '14', name: 'Cuaderno A4', price: 4.50, icon: '📓', category: 'Útiles' },
+  { id: 'p86', storeId: '14', name: 'Caja de Lapiceros', price: 12.00, icon: '🖊️', category: 'Útiles' },
+  { id: 'p87', storeId: '14', name: 'Novela Best Seller', price: 45.00, icon: '📚', category: 'Libros' },
+  { id: 'p88', storeId: '14', name: 'Mochila Escolar', price: 55.00, icon: '🎒', category: 'Mochilas' },
+  { id: 'p89', storeId: '14', name: 'Set de Plumones', price: 18.00, icon: '🖍️', category: 'Arte' },
+  { id: 'p90', storeId: '14', name: 'Cartulina de Colores', price: 5.00, icon: '📄', category: 'Papelería' },
+
+  { id: 'p91', storeId: '15', name: 'Proteína Whey 1kg', price: 120.00, icon: '🥤', category: 'Suplementos' },
+  { id: 'p92', storeId: '15', name: 'Mancuernas 5kg', price: 45.00, icon: '🏋️', category: 'Equipos' },
+  { id: 'p93', storeId: '15', name: 'Creatina 500g', price: 85.00, icon: '💊', category: 'Suplementos' },
+  { id: 'p94', storeId: '15', name: 'Mat de Yoga', price: 35.00, icon: '🧘', category: 'Accesorios' },
+  { id: 'p95', storeId: '15', name: 'Guantes de Gym', price: 25.00, icon: '🧤', category: 'Accesorios' },
+  { id: 'p96', storeId: '15', name: 'Banda Elástica', price: 15.00, icon: '➰', category: 'Equipos' },
+
+  { id: 'p97', storeId: '16', name: 'Helado de Vainilla', price: 6.00, icon: '🍦', category: 'Helados' },
+  { id: 'p98', storeId: '16', name: 'Helado de Chocolate', price: 6.00, icon: '🍦', category: 'Helados' },
+  { id: 'p99', storeId: '16', name: 'Jugo de Papaya', price: 5.00, icon: '🥤', category: 'Jugos' },
+  { id: 'p100', storeId: '16', name: 'Jugo Surtido', price: 7.00, icon: '🥤', category: 'Jugos' },
+  { id: 'p101', storeId: '16', name: 'Milkshake', price: 10.00, icon: '🥛', category: 'Batidos' },
+  { id: 'p102', storeId: '16', name: 'Ensalada de Frutas', price: 12.00, icon: '🥗', category: 'Postres' },
+
+  { id: 'p103', storeId: '17', name: 'Martillo', price: 25.00, icon: '🔨', category: 'Herramientas' },
+  { id: 'p104', storeId: '17', name: 'Destornillador', price: 12.00, icon: '🪛', category: 'Herramientas' },
+  { id: 'p105', storeId: '17', name: 'Cinta Métrica', price: 10.00, icon: '📏', category: 'Herramientas' },
+  { id: 'p106', storeId: '17', name: 'Pintura Blanca 1G', price: 35.00, icon: '🎨', category: 'Pintura' },
+  { id: 'p107', storeId: '17', name: 'Brocha 2"', price: 5.00, icon: '🖌️', category: 'Pintura' },
+  { id: 'p108', storeId: '17', name: 'Caja de Clavos', price: 8.00, icon: '🔩', category: 'Ferretería' },
+
+  { id: 'p109', storeId: '18', name: 'Comida para Perro 3kg', price: 45.00, icon: '🐕', category: 'Alimentos' },
+  { id: 'p110', storeId: '18', name: 'Comida para Gato 2kg', price: 35.00, icon: '🐈', category: 'Alimentos' },
+  { id: 'p111', storeId: '18', name: 'Juguete de Goma', price: 12.00, icon: '🦴', category: 'Juguetes' },
+  { id: 'p112', storeId: '18', name: 'Correa para Paseo', price: 18.00, icon: '🦮', category: 'Accesorios' },
+  { id: 'p113', storeId: '18', name: 'Cama para Mascota', price: 55.00, icon: '🛌', category: 'Hogar' },
+  { id: 'p114', storeId: '18', name: 'Shampoo Antipulgas', price: 20.00, icon: '🧴', category: 'Higiene' },
+
+  { id: 'p115', storeId: '19', name: 'Café Americano', price: 6.00, icon: '☕', category: 'Bebidas' },
+  { id: 'p116', storeId: '19', name: 'Capuchino', price: 8.00, icon: '☕', category: 'Bebidas' },
+  { id: 'p117', storeId: '19', name: 'Porción de Torta', price: 12.00, icon: '🍰', category: 'Postres' },
+  { id: 'p118', storeId: '19', name: 'Sandwich de Pollo', price: 10.00, icon: '🥪', category: 'Snacks' },
+  { id: 'p119', storeId: '19', name: 'Té de Manzanilla', price: 4.00, icon: '🍵', category: 'Bebidas' },
+  { id: 'p120', storeId: '19', name: 'Brownie', price: 7.00, icon: '🍫', category: 'Postres' },
+
+  { id: 'p121', storeId: '20', name: 'Lentes de Lectura', price: 45.00, icon: '👓', category: 'Lentes' },
+  { id: 'p122', storeId: '20', name: 'Lentes de Sol', price: 65.00, icon: '🕶️', category: 'Sol' },
+  { id: 'p123', storeId: '20', name: 'Estuche para Lentes', price: 15.00, icon: '👝', category: 'Accesorios' },
+  { id: 'p124', storeId: '20', name: 'Líquido Limpiador', price: 10.00, icon: '💧', category: 'Cuidado' },
+  { id: 'p125', storeId: '20', name: 'Paño de Microfibra', price: 5.00, icon: '🧽', category: 'Cuidado' },
+  { id: 'p126', storeId: '20', name: 'Lentes de Contacto', price: 55.00, icon: '👁️', category: 'Lentes' },
 ];
 
 export const TACORA_ITEMS = [
@@ -203,4 +422,9 @@ export const TACORA_ITEMS = [
   { id: 't8', name: 'Monitor LG 24"', price: 250, condition: 'Muy Bueno', seller: 'Diego Flores', category: 'Electrónicos', icon: '🖥️' },
   { id: 't9', name: 'Set de Ollas Acero Inoxidable', price: 180, condition: 'Como Nuevo', seller: 'Elena Vega', category: 'Hogar', icon: '🥘' },
   { id: 't10', name: 'Guitarra Acústica Yamaha', price: 400, condition: 'Muy Bueno', seller: 'Javier Luna', category: 'Instrumentos', icon: '🎸' },
+  { id: 't11', name: 'Cámara Canon Reflex', price: 750, condition: 'Muy Bueno', seller: 'Roberto Solis', category: 'Electrónicos', icon: '📷' },
+  { id: 't12', name: 'Silla Gamer', price: 200, condition: 'Bueno', seller: 'Laura Pineda', category: 'Hogar', icon: '💺' },
+  { id: 't13', name: 'Reloj Casio Vintage', price: 60, condition: 'Como Nuevo', seller: 'Marcos Rio', category: 'Accesorios', icon: '⌚' },
+  { id: 't14', name: 'Microondas LG', price: 150, condition: 'Bueno', seller: 'Rosa Alba', category: 'Hogar', icon: '📻' },
+  { id: 't15', name: 'Colección Harry Potter', price: 90, condition: 'Muy Bueno', seller: 'Kevin Tello', category: 'Libros', icon: '📚' },
 ];

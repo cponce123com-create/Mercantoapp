@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, MapPin, ShoppingBag, Star, Info, Clock, Plus, Check } from "lucide-react";
+import { ArrowLeft, MapPin, ShoppingBag, Star, Info, Clock, Plus, Check, Minus } from "lucide-react";
 import { FEATURED_STORES, PRODUCTS } from "@/data/mock";
+import { useCart } from "@/lib/CartContext";
 
 export default function StoreDetail() {
   const [, params] = useRoute("/tienda/:id");
   const [, setLocation] = useLocation();
-  const [addedItems, setAddedItems] = useState<Record<string, boolean>>({});
+  const { items, addItem, updateQuantity } = useCart();
   
   const storeId = params?.id;
   const store = FEATURED_STORES.find(s => s.id === storeId);
@@ -24,11 +25,13 @@ export default function StoreDetail() {
     );
   }
 
-  const handleAddToCart = (productId: string) => {
-    setAddedItems(prev => ({ ...prev, [productId]: true }));
-    setTimeout(() => {
-      setAddedItems(prev => ({ ...prev, [productId]: false }));
-    }, 2000);
+  const handleAddToCart = (product: any) => {
+    addItem(product, store);
+  };
+
+  const getItemQuantity = (productId: string) => {
+    const item = items.find(i => i.productId === productId);
+    return item ? item.quantity : 0;
   };
 
   const categories = Array.from(new Set(storeProducts.map(p => p.category)));
@@ -87,30 +90,50 @@ export default function StoreDetail() {
             <div key={category} className="mb-10">
               <h3 className="text-xl font-bold text-foreground mb-4 border-b pb-2">{category}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {storeProducts.filter(p => p.category === category).map(product => (
-                  <div key={product.id} className="bg-white p-4 rounded-2xl border border-border shadow-sm hover:shadow-md transition-all flex flex-col">
-                    <div className="w-full aspect-square bg-muted/30 rounded-xl mb-4 flex items-center justify-center text-6xl">
-                      {product.icon}
+                {storeProducts.filter(p => p.category === category).map(product => {
+                  const quantity = getItemQuantity(product.id);
+                  const inCart = quantity > 0;
+                  
+                  return (
+                    <div key={product.id} className={`bg-white p-4 rounded-2xl border ${inCart ? 'border-green-500 bg-green-50/30' : 'border-border'} shadow-sm hover:shadow-md transition-all flex flex-col`}>
+                      <div className="w-full aspect-square bg-muted/30 rounded-xl mb-4 flex items-center justify-center text-6xl">
+                        {product.icon}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-lg leading-tight mb-1">{product.name}</h4>
+                        <p className="text-muted-foreground text-sm mb-4">{product.category}</p>
+                      </div>
+                      <div className="flex items-center justify-between mt-auto">
+                        <span className="text-xl font-bold text-primary">S/ {product.price.toFixed(2)}</span>
+                        
+                        {inCart ? (
+                          <div className="flex items-center gap-2 bg-green-100 rounded-full p-1 border border-green-200">
+                            <button 
+                              onClick={() => updateQuantity(product.id, -1)}
+                              className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm text-green-700 hover:bg-green-50 transition-colors"
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <span className="text-sm font-bold w-4 text-center text-green-800">{quantity}</span>
+                            <button 
+                              onClick={() => updateQuantity(product.id, 1)}
+                              className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm text-green-700 hover:bg-green-50 transition-colors"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => handleAddToCart(product)}
+                            className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-primary/10 text-primary hover:bg-primary hover:text-white"
+                          >
+                            <Plus size={20} />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-lg leading-tight mb-1">{product.name}</h4>
-                      <p className="text-muted-foreground text-sm mb-4">{product.category}</p>
-                    </div>
-                    <div className="flex items-center justify-between mt-auto">
-                      <span className="text-xl font-bold text-primary">S/ {product.price.toFixed(2)}</span>
-                      <button 
-                        onClick={() => handleAddToCart(product.id)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                          addedItems[product.id] 
-                            ? 'bg-green-500 text-white' 
-                            : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'
-                        }`}
-                      >
-                        {addedItems[product.id] ? <Check size={20} /> : <Plus size={20} />}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))
