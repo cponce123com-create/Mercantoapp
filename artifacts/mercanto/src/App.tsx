@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { CategoryProvider } from "@/lib/CategoryContext";
 import { CartProvider } from "@/lib/CartContext";
-
 // Custom components
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -18,6 +17,8 @@ import MapPage from "@/pages/MapPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminPage from "@/pages/AdminPage";
 import CheckoutPage from "@/pages/CheckoutPage";
+import LoginPage from "@/pages/LoginPage";
+import RegisterPage from "@/pages/RegisterPage";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,8 @@ function Router() {
       <Route path="/perfil" component={ProfilePage} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/pedido" component={CheckoutPage} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/registro" component={RegisterPage} />
       <Route component={NotFound} />
     </Switch>
   );
