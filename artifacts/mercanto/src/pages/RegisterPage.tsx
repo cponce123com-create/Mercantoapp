@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/lib/AuthContext";
+import { useAuth, API_URL } from "@/lib/AuthContext";
 
 export default function RegisterPage() {
   const { login: setAuthUser } = useAuth();
@@ -18,13 +18,12 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/register", {
+const res = await fetch(`${API_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ name, email, password, role }),
-      });
-
-      const data = await res.json();
+      });  const data = await res.json();
       
       if (!res.ok) {
         throw new Error(data.error || "Error al registrarse");
@@ -113,7 +112,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 rounded-lg transition disabled:opacity-50"
           >
             {loading ? "Creando cuenta..." : "Crear cuenta"}
           </button>

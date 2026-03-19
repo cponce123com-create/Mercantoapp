@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const API_URL = "https://mercanto-api.onrender.com";
+export const API_URL = "https://mercanto-api.onrender.com";
 
 interface User {
   id: number;
