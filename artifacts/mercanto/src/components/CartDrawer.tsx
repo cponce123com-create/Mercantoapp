@@ -37,10 +37,15 @@ export function CartDrawer() {
       {/* Drawer */}
       <div 
         ref={drawerRef}
-        className="fixed inset-y-0 right-0 z-[95] w-full sm:w-[400px] bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out"
-        style={{ transform: isCartOpen ? 'translateX(0)' : 'translateX(100%)' }}
+        className="fixed inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto z-[95] w-full h-[90vh] sm:h-full sm:w-[400px] bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out rounded-t-[2.5rem] sm:rounded-none"
+        style={{ transform: isCartOpen ? 'translateY(0)' : 'translateY(100%)' }}
       >
-        <div className="flex items-center justify-between p-6 border-b border-border/50">
+        {/* Mobile Pull Handle */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1">
+          <div className="w-12 h-1.5 bg-muted rounded-full" />
+        </div>
+
+        <div className="flex items-center justify-between p-6 pt-2 sm:pt-6 border-b border-border/50">
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 p-2 rounded-full text-primary">
               <ShoppingBag size={20} />

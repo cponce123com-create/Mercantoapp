@@ -21,9 +21,9 @@ export function Navbar() {
   }
 
   return (
+    <>
     <header className="sticky top-0 z-50 w-full bg-white border-b border-border/50 shadow-sm backdrop-blur-md bg-white/90">
-      {/* Top Main Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Top Main Bar */} <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20 gap-4">
           
           {/* Logo */}
@@ -161,5 +161,134 @@ export function Navbar() {
         </div>
       </div>
     </header>
+
+    {/* Mobile Menu Overlay */}
+    <div 
+      className={cn(
+        "fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden",
+        isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      )}
+      onClick={() => setIsMobileMenuOpen(false)}
+    />
+    
+    {/* Mobile Sidebar */}
+    <div 
+      className={cn(
+        "fixed inset-y-0 left-0 z-[101] w-[280px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden flex flex-col",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+      )}
+    >
+      <div className="p-6 border-b border-border/50 flex items-center justify-between bg-primary/5">
+        <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2">
+          <div className="bg-primary text-white p-1.5 rounded-lg shadow-sm">
+            <ShoppingCart size={20} strokeWidth={2.5} />
+          </div>
+          <span className="font-display font-extrabold text-xl tracking-tight text-primary">
+            mercanto
+          </span>
+        </Link>
+        <button 
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground"
+        >
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+        <div className="px-2 pb-2">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Navegación</p>
+          <Link 
+            href="/" 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-colors",
+              location === "/" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+            )}
+          >
+            <ShoppingCart size={20} />
+            <span>Inicio</span>
+          </Link>
+          <Link 
+            href="/tiendas" 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-colors",
+              location === "/tiendas" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+            )}
+          >
+            <Search size={20} />
+            <span>Explorar Tiendas</span>
+          </Link>
+          <Link 
+            href="/mapa" 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-colors",
+              location === "/mapa" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+            )}
+          >
+            <MapPin size={20} />
+            <span>Mapa</span>
+          </Link>
+        </div>
+
+        <div className="px-2 pt-4 border-t border-border/50">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Mi Cuenta</p>
+          {user ? (
+            <>
+              <Link 
+                href="/perfil" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-colors",
+                  location === "/perfil" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                )}
+              >
+                <User size={20} />
+                <span>Mi Perfil</span>
+              </Link>
+              {user.role === 'admin' && (
+                <Link 
+                  href="/admin" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-colors",
+                    location === "/admin" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                  )}
+                >
+                  <User size={20} className="text-primary" />
+                  <span>Administración</span>
+                </Link>
+              )}
+              <button 
+                onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-red-600 hover:bg-red-50 transition-colors mt-2"
+              >
+                <LogOut size={20} />
+                <span>Cerrar Sesión</span>
+              </button>
+            </>
+          ) : (
+            <Link 
+              href="/login" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+            >
+              <User size={20} />
+              <span>Iniciar Sesión</span>
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <div className="p-6 border-t border-border/50 bg-muted/30">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground font-medium">
+          <MapPin size={14} />
+          <span>Disponible en tu distrito</span>
+        </div>
+      </div>
+    </div>
+    </>
   );
 }
