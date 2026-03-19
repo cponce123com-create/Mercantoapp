@@ -55,6 +55,7 @@ export const stores = pgTable(
     city: varchar('city', { length: 100 }),
     country: varchar('country', { length: 100 }),
     logo_url: varchar('logo_url', { length: 500 }),
+    status: varchar('status', { length: 50 }).default('pending').notNull(), // 'pending', 'approved', 'rejected'
     is_active: boolean('is_active').default(true).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),

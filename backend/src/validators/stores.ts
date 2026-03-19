@@ -23,7 +23,16 @@ export const updateStoreSchema = z.object({
   country: z.string().max(100).optional(),
   logo_url: z.string().url('URL de logo inválida').optional(),
   is_active: z.boolean().optional(),
+  status: z.enum(['pending', 'approved', 'rejected']).optional(),
 });
+
+export const updateStoreStatusSchema = z.object({
+  status: z.enum(['pending', 'approved', 'rejected'], {
+    errorMap: () => ({ message: 'Estado inválido. Debe ser pending, approved o rejected' }),
+  }),
+});
+
+export type UpdateStoreStatusInput = z.infer<typeof updateStoreStatusSchema>;
 
 export const storeIdSchema = z.object({
   id: z.coerce.number().int().positive('ID debe ser un número positivo'),
@@ -34,6 +43,7 @@ export const listStoresSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10),
   owner_id: z.coerce.number().int().positive().optional(),
   is_active: z.coerce.boolean().optional(),
+  status: z.enum(['pending', 'approved', 'rejected']).optional(),
 });
 
 export type CreateStoreInput = z.infer<typeof createStoreSchema>;

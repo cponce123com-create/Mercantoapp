@@ -12,6 +12,8 @@ Backend REST API para Mercanto construido con **Hono**, **Drizzle ORM** y **Post
 - ✅ Healthcheck endpoint
 - ✅ Logging de requests
 - ✅ Relaciones entre tablas con Drizzle ORM
+- ✅ Panel Admin con endpoints protegidos por rol (dashboard, tiendas, pedidos)
+- ✅ Flujo de aprobación/rechazo de tiendas (pending → approved/rejected)
 
 ## 📋 Requisitos
 
@@ -199,6 +201,7 @@ Estados válidos: `pending`, `confirmed`, `shipped`, `delivered`, `cancelled`
 - `city`: Ciudad
 - `country`: País
 - `logo_url`: URL del logo
+- `status`: Estado de aprobación (`pending`, `approved`, `rejected`)
 - `is_active`: Estado activo/inactivo
 - `created_at`: Fecha de creación
 - `updated_at`: Fecha de actualización
@@ -316,6 +319,30 @@ MIT
 ## 👤 Autor
 
 Mercanto Team
+
+---
+
+### Admin API (requiere rol `admin`)
+
+```
+GET    /api/admin/dashboard              # Métricas reales del sistema
+GET    /api/admin/stores                 # Listar todas las tiendas con info del dueño
+PATCH  /api/admin/stores/:id/approve     # Aprobar tienda
+PATCH  /api/admin/stores/:id/reject      # Rechazar tienda
+PATCH  /api/admin/stores/:id/status      # Cambiar estado (pending/approved/rejected)
+GET    /api/admin/orders                 # Listar todos los pedidos con info de usuario y tienda
+PATCH  /api/admin/orders/:id/status      # Actualizar estado de pedido
+```
+
+### Migración de base de datos (campo status en stores)
+
+Si la base de datos ya existe, ejecutar:
+
+```bash
+pnpm run db:migrate:manual
+# o manualmente:
+psql $DATABASE_URL -f migrations/0001_add_store_status.sql
+```
 
 ---
 
