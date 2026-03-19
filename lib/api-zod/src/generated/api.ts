@@ -14,3 +14,122 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary List stores
+ */
+export const listStoresQueryPageDefault = 1;
+export const listStoresQueryLimitDefault = 10;
+
+export const ListStoresQueryParams = zod.object({
+  page: zod.coerce.number().default(listStoresQueryPageDefault),
+  limit: zod.coerce.number().default(listStoresQueryLimitDefault),
+  owner_id: zod.coerce.number().optional(),
+  is_active: zod.coerce.boolean().optional(),
+  status: zod.enum(["pending", "approved", "rejected"]).optional(),
+});
+
+export const ListStoresResponse = zod.object({
+  success: zod.boolean().optional(),
+  data: zod
+    .array(
+      zod.object({
+        id: zod.number().optional(),
+        owner_id: zod.number().optional(),
+        name: zod.string().optional(),
+        description: zod.string().optional(),
+        email: zod.string().optional(),
+        phone: zod.string().optional(),
+        address: zod.string().optional(),
+        city: zod.string().optional(),
+        country: zod.string().optional(),
+        logo_url: zod.string().optional(),
+        is_active: zod.boolean().optional(),
+        status: zod.enum(["pending", "approved", "rejected"]).optional(),
+        created_at: zod.date().optional(),
+      }),
+    )
+    .optional(),
+  pagination: zod
+    .object({
+      page: zod.number().optional(),
+      limit: zod.number().optional(),
+      total: zod.number().optional(),
+      pages: zod.number().optional(),
+    })
+    .optional(),
+});
+
+/**
+ * @summary Get store by ID
+ */
+export const GetStoreParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetStoreResponse = zod.object({
+  success: zod.boolean().optional(),
+  data: zod
+    .object({
+      id: zod.number().optional(),
+      owner_id: zod.number().optional(),
+      name: zod.string().optional(),
+      description: zod.string().optional(),
+      email: zod.string().optional(),
+      phone: zod.string().optional(),
+      address: zod.string().optional(),
+      city: zod.string().optional(),
+      country: zod.string().optional(),
+      logo_url: zod.string().optional(),
+      is_active: zod.boolean().optional(),
+      status: zod.enum(["pending", "approved", "rejected"]).optional(),
+      created_at: zod.date().optional(),
+    })
+    .optional(),
+});
+
+/**
+ * @summary List products by store
+ */
+export const ListProductsByStoreParams = zod.object({
+  storeId: zod.coerce.number(),
+});
+
+export const listProductsByStoreQueryPageDefault = 1;
+export const listProductsByStoreQueryLimitDefault = 10;
+
+export const ListProductsByStoreQueryParams = zod.object({
+  page: zod.coerce.number().default(listProductsByStoreQueryPageDefault),
+  limit: zod.coerce.number().default(listProductsByStoreQueryLimitDefault),
+  category: zod.coerce.string().optional(),
+  is_active: zod.coerce.boolean().optional(),
+});
+
+export const ListProductsByStoreResponse = zod.object({
+  success: zod.boolean().optional(),
+  data: zod
+    .array(
+      zod.object({
+        id: zod.number().optional(),
+        store_id: zod.number().optional(),
+        name: zod.string().optional(),
+        description: zod.string().optional(),
+        price: zod.number().optional(),
+        stock: zod.number().optional(),
+        sku: zod.string().optional(),
+        category: zod.string().optional(),
+        image_url: zod.string().optional(),
+        is_active: zod.boolean().optional(),
+        created_at: zod.date().optional(),
+      }),
+    )
+    .optional(),
+  pagination: zod
+    .object({
+      page: zod.number().optional(),
+      limit: zod.number().optional(),
+      total: zod.number().optional(),
+      pages: zod.number().optional(),
+    })
+    .optional(),
+});

@@ -1,7 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, MapPin, ShoppingBag, ArrowLeft, Filter } from "lucide-react";
-import { FEATURED_STORES, CATEGORIES } from "@/data/mock";
+import { Search, MapPin, ShoppingBag, ArrowLeft, Filter, AlertCircle } from "lucide-react";
+import { CATEGORIES } from "@/data/mock";
+import { useListStores } from "@workspace/api-client-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Stores() {
   const [, setLocation] = useLocation();
@@ -10,20 +13,42 @@ export default function Stores() {
   const urlCategory = searchParams.get('categoria') || "all";
   const [selectedCategory, setSelectedCategory] = useState(urlCategory);
 
+  const { data, isLoading, error, refetch } = useListStores({
+    status: 'approved',
+    is_active: true,
+    limit: 50
+  });
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const cat = params.get('categoria');
     if (cat) setSelectedCategory(cat);
   }, []);
 
+  const stores = data?.data || [];
+
   const filteredStores = useMemo(() => {
-    return FEATURED_STORES.filter(store => {
+    return stores.filter(store => {
       const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           store.category.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === "all" || store.categoryId === selectedCategory;
+                           (store.description || "").toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Mapeo simple de categorías para el mock visual
+      const categoryMap: Record<string, string> = {
+        'restaurants': 'Restaurante',
+        'fruits': 'Frutas y Verduras',
+        'stores': 'Minimarket',
+        'clothes': 'Ropa',
+        'home': 'Hogar',
+        'tech': 'Tecnología',
+        'pharmacy': 'Salud'
+      };
+      
+      const matchesCategory = selectedCategory === "all" || 
+                             (store.description || "").includes(categoryMap[selectedCategory] || "");
+      
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [stores, searchQuery, selectedCategory]);
 
   return (
     <div className="min-h-screen bg-background pt-8 pb-20">
@@ -83,7 +108,20 @@ export default function Stores() {
 
           {/* Grid */}
           <div className="flex-1">
-            {filteredStores.length === 0 ? (
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-64 rounded-3xl" />)}
+              </div>
+            ) : error ? (
+              <Alert variant="destructive" className="rounded-3xl">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription className="flex items-center justify-between">
+                  No se pudieron cargar las tiendas.
+                  <button onClick={() => refetch()} className="ml-4 underline font-bold">Reintentar</button>
+                </AlertDescription>
+              </Alert>
+            ) : filteredStores.length === 0 ? (
               <div className="bg-white rounded-3xl border border-border p-12 text-center flex flex-col items-center justify-center">
                 <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center text-4xl mb-6">
                   🔍
@@ -108,9 +146,13 @@ export default function Stores() {
                     className="group flex-shrink-0 w-full bg-white rounded-3xl overflow-hidden border border-border/60 shadow-md shadow-black/5 hover:shadow-xl hover:border-primary/30 transition-all duration-300 text-left focus:outline-none focus:ring-4 focus:ring-primary/20"
                   >
                     {/* Visual Header */}
-                    <div className={`h-36 w-full bg-gradient-to-r ${store.gradient} relative flex items-center justify-center`}>
+                    <div className={`h-36 w-full bg-gradient-to-r from-slate-700 to-slate-900 relative flex items-center justify-center overflow-hidden`}>
+                      {store.logo_url ? (
+                        <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700" />
+                      ) : (
+                        <div className="text-6xl drop-shadow-lg transform group-hover:scale-110 transition-transform duration-300">🏪</div>
+                      )}
                       <div className="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
-                      <div className="text-6xl drop-shadow-lg transform group-hover:scale-110 transition-transform duration-300">{store.icon}</div>
                     </div>
                     
                     {/* Content */}
@@ -118,18 +160,18 @@ export default function Stores() {
                       {/* Badge overlaps header */}
                       <div className="absolute -top-4 right-4 bg-white px-3 py-1 rounded-full shadow-md text-xs font-bold text-primary flex items-center gap-1 border border-border/50">
                         <ShoppingBag size={12} />
-                        {store.badge}
+                        Recojo en tienda
                       </div>
                       
                       <div className="mt-2">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 block">
-                          {store.category}
+                          Tienda
                         </span>
                         <h3 className="text-xl font-bold text-foreground leading-tight group-hover:text-primary transition-colors mb-2">
                           {store.name}
                         </h3>
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          {store.description}
+                          {store.description || 'Sin descripción disponible.'}
                         </p>
                       </div>
                       
@@ -139,7 +181,7 @@ export default function Stores() {
                         </div>
                         <span className="w-1 h-1 rounded-full bg-border"></span>
                         <div className="flex items-center gap-1">
-                          <MapPin size={14} /> 1.2 km
+                          <MapPin size={14} /> {store.city || 'Lima'}
                         </div>
                       </div>
                     </div>

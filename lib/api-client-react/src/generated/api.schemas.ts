@@ -8,3 +8,89 @@
 export interface HealthStatus {
   status: string;
 }
+
+export type StoreStatus = (typeof StoreStatus)[keyof typeof StoreStatus];
+
+export const StoreStatus = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
+export interface Store {
+  id?: number;
+  owner_id?: number;
+  name?: string;
+  description?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  logo_url?: string;
+  is_active?: boolean;
+  status?: StoreStatus;
+  created_at?: string;
+}
+
+export interface StoreResponse {
+  success?: boolean;
+  data?: Store;
+}
+
+export interface Pagination {
+  page?: number;
+  limit?: number;
+  total?: number;
+  pages?: number;
+}
+
+export interface StoreListResponse {
+  success?: boolean;
+  data?: Store[];
+  pagination?: Pagination;
+}
+
+export interface Product {
+  id?: number;
+  store_id?: number;
+  name?: string;
+  description?: string;
+  price?: number;
+  stock?: number;
+  sku?: string;
+  category?: string;
+  image_url?: string;
+  is_active?: boolean;
+  created_at?: string;
+}
+
+export interface ProductListResponse {
+  success?: boolean;
+  data?: Product[];
+  pagination?: Pagination;
+}
+
+export type ListStoresParams = {
+  page?: number;
+  limit?: number;
+  owner_id?: number;
+  is_active?: boolean;
+  status?: ListStoresStatus;
+};
+
+export type ListStoresStatus =
+  (typeof ListStoresStatus)[keyof typeof ListStoresStatus];
+
+export const ListStoresStatus = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
+export type ListProductsByStoreParams = {
+  page?: number;
+  limit?: number;
+  category?: string;
+  is_active?: boolean;
+};

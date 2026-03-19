@@ -1,6 +1,5 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
   description: API specification
@@ -10,6 +9,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: stores
+    description: Store operations
+  - name: products
+    description: Product operations
 paths:
   /healthz:
     get:
@@ -24,6 +27,96 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /stores:
+    get:
+      operationId: listStores
+      tags: [stores]
+      summary: List stores
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: owner_id
+          in: query
+          schema:
+            type: integer
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+      responses:
+        "200":
+          description: List of stores
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreListResponse"
+  /stores/{id}:
+    get:
+      operationId: getStore
+      tags: [stores]
+      summary: Get store by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Store details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreResponse"
+  /products/store/{storeId}:
+    get:
+      operationId: listProductsByStore
+      tags: [products]
+      summary: List products by store
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +126,100 @@ components:
           type: string
       required:
         - status
-
+    Store:
+      type: object
+      properties:
+        id:
+          type: integer
+        owner_id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        logo_url:
+          type: string
+        is_active:
+          type: boolean
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        created_at:
+          type: string
+          format: date-time
+    StoreResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/Store"
+    StoreListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Store"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        store_id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        stock:
+          type: integer
+        sku:
+          type: string
+        category:
+          type: string
+        image_url:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    ProductListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer

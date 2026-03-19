@@ -1,16 +1,40 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Check, MapPin, Search, ShieldCheck, ShoppingBag, Store, Tag } from "lucide-react";
-import { CATEGORY_CARDS, FEATURED_STORES } from "@/data/mock";
+import { ArrowRight, Check, MapPin, Search, ShieldCheck, ShoppingBag, Store, Tag, AlertCircle } from "lucide-react";
+import { CATEGORY_CARDS } from "@/data/mock";
 import { Link, useLocation } from "wouter";
 import { useCategory } from "@/lib/CategoryContext";
+import { useListStores } from "@workspace/api-client-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const { activeCategory } = useCategory();
 
+  const { data, isLoading, error, refetch } = useListStores({
+    status: 'approved',
+    is_active: true,
+    limit: 8
+  });
+
+  const stores = data?.data || [];
+
+  // Filtrado local por categoría si es necesario, aunque lo ideal sería por API
   const filteredStores = activeCategory === 'all' 
-    ? FEATURED_STORES 
-    : FEATURED_STORES.filter(store => store.categoryId === activeCategory);
+    ? stores 
+    : stores.filter(store => {
+        // Mapeo simple de categorías para el mock visual
+        const categoryMap: Record<string, string> = {
+          'restaurants': 'Restaurante',
+          'fruits': 'Frutas y Verduras',
+          'stores': 'Minimarket',
+          'clothes': 'Ropa',
+          'home': 'Hogar',
+          'tech': 'Tecnología',
+          'pharmacy': 'Salud'
+        };
+        return store.description?.includes(categoryMap[activeCategory]) || false;
+      });
 
   return (
     <div className="w-full">
@@ -73,18 +97,16 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Hero Visual - Abstract Composition instead of real images */}
+            {/* Hero Visual */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative hidden lg:flex justify-center items-center h-[500px]"
             >
-              {/* Complex CSS Composition */}
               <div className="relative w-[400px] h-[400px]">
                 <div className="absolute inset-0 bg-gradient-to-tr from-rose-400 via-primary to-orange-500 rounded-[3rem] rotate-6 shadow-2xl opacity-90 blur-[2px]"></div>
                 <div className="absolute inset-0 bg-white rounded-[3rem] -rotate-3 shadow-xl border border-white/50 overflow-hidden flex flex-col">
-                  {/* Mock App Interface inside the rotated card */}
                   <div className="h-16 bg-muted/30 border-b border-border/50 flex items-center px-6 gap-4">
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center"><MapPin size={16} className="text-primary"/></div>
                     <div className="flex-1">
@@ -107,7 +129,6 @@ export default function Home() {
                   </div>
                 </div>
                 
-                {/* Floating Elements */}
                 <motion.div 
                   animate={{ y: [-10, 10, -10] }} 
                   transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
@@ -159,7 +180,6 @@ export default function Home() {
                 className="group relative rounded-3xl overflow-hidden aspect-[4/3] text-left transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-primary/20"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-90 group-hover:opacity-100 transition-opacity duration-300`}></div>
-                {/* Decorative Pattern overlay */}
                 <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent mix-blend-overlay"></div>
                 
                 <div className="absolute inset-0 p-6 flex flex-col justify-between z-10">
@@ -181,202 +201,116 @@ export default function Home() {
             {/* Special Promo Card */}
             <button onClick={() => setLocation('/tacora')} className="group relative rounded-3xl overflow-hidden aspect-[4/3] sm:col-span-2 lg:col-span-2 xl:col-span-4 lg:aspect-auto xl:h-64 text-left transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none">
               <div className="absolute inset-0 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600"></div>
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-30"></div>
-              
-              <div className="absolute inset-0 p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between z-10 gap-6">
-                <div className="max-w-xl">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white text-violet-700 rounded-full text-xs font-bold uppercase tracking-wider mb-4 shadow-sm">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
-                    </span>
-                    NUEVO EN MERCANTO
+              <div className="absolute inset-0 p-8 flex flex-col lg:flex-row items-center justify-between gap-8 z-10">
+                <div className="max-w-md">
+                  <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-xs font-bold uppercase tracking-wider mb-4">
+                    Segunda Mano
+                  </span>
+                  <h3 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">Tacora Digital</h3>
+                  <p className="text-white/80 text-lg mb-6">Vende lo que ya no usas o encuentra tesoros únicos en tu distrito. Seguro, local y sostenible.</p>
+                  <div className="flex items-center gap-2 text-white font-bold group-hover:gap-4 transition-all">
+                    Explorar Tacora <ArrowRight size={20} />
                   </div>
-                  <h3 className="text-3xl sm:text-4xl font-display font-bold text-white mb-2 drop-shadow-md">Tacora Segunda Mano</h3>
-                  <p className="text-violet-100 text-lg sm:text-xl font-medium">Encuentra tesoros vintage, ropa circular y objetos únicos de vendedores locales verificados.</p>
                 </div>
-                
-                <div className="flex-shrink-0">
-                  <div className="px-6 py-3.5 bg-white text-violet-700 rounded-2xl font-bold text-lg shadow-lg group-hover:bg-violet-50 transition-colors flex items-center gap-2">
-                    Explorar Tacora <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                  </div>
+                <div className="hidden lg:flex items-center justify-center w-48 h-48 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-7xl shadow-2xl group-hover:scale-110 transition-transform duration-500">
+                  ✨
                 </div>
               </div>
-              
-              {/* Decorative graphic right */}
-              <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
             </button>
           </div>
-          
-          <button onClick={() => setLocation('/tiendas')} className="sm:hidden w-full mt-6 py-4 bg-muted text-foreground font-bold rounded-2xl flex items-center justify-center gap-2">
-            Ver todas las categorías <ArrowRight size={18} />
-          </button>
         </div>
       </section>
 
       {/* TIENDAS DESTACADAS */}
-      <section className="py-16 lg:py-24 bg-muted/30">
+      <section className="py-16 lg:py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
             <div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">Tiendas destacadas en tu distrito</h2>
-              <p className="text-muted-foreground mt-2 text-lg">Los negocios más confiables y populares cerca de ti.</p>
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">Tiendas destacadas</h2>
+              <p className="text-muted-foreground mt-2 text-lg">Los negocios favoritos de tus vecinos.</p>
             </div>
-            <button onClick={() => setLocation('/tiendas')} className="hidden sm:flex items-center gap-2 text-primary font-bold hover:text-primary/80 transition-colors group">
-              Ver todas <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </button>
+            <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+              {['all', 'restaurants', 'fruits', 'stores'].map((catId) => (
+                <button 
+                  key={catId}
+                  className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
+                    activeCategory === catId 
+                      ? 'bg-primary text-white shadow-lg shadow-primary/25' 
+                      : 'bg-white text-muted-foreground hover:bg-muted border border-border'
+                  }`}
+                >
+                  {catId === 'all' ? 'Todas' : catId === 'restaurants' ? 'Restaurantes' : catId === 'fruits' ? 'Fruterías' : 'Minimarkets'}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="flex overflow-x-auto hide-scrollbar snap-x gap-6 pb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
-            {filteredStores.map((store) => (
-              <button 
-                key={store.id}
-                onClick={() => setLocation(`/tienda/${store.id}`)}
-                className="group flex-shrink-0 w-72 sm:w-80 bg-white rounded-3xl overflow-hidden border border-border/60 shadow-md shadow-black/5 hover:shadow-xl hover:border-primary/30 transition-all duration-300 snap-start text-left focus:outline-none focus:ring-4 focus:ring-primary/20"
-              >
-                {/* Visual Header */}
-                <div className={`h-32 w-full bg-gradient-to-r ${store.gradient} relative flex items-center justify-center`}>
-                  <div className="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
-                  <div className="text-5xl drop-shadow-lg transform group-hover:scale-110 transition-transform duration-300">{store.icon}</div>
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-4">
+                  <Skeleton className="h-48 w-full rounded-3xl" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
                 </div>
-                
-                {/* Content */}
-                <div className="p-5 relative">
-                  {/* Badge overlaps header */}
-                  <div className="absolute -top-4 right-4 bg-white px-3 py-1 rounded-full shadow-md text-xs font-bold text-primary flex items-center gap-1 border border-border/50">
-                    <ShoppingBag size={12} />
-                    {store.badge}
-                  </div>
-                  
-                  <div className="mt-2">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 block">
-                      {store.category}
-                    </span>
-                    <h3 className="text-xl font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
-                      {store.name}
-                    </h3>
-                  </div>
-                  
-                  <div className="mt-4 flex items-center gap-3 text-sm text-muted-foreground font-medium border-t border-border pt-4">
-                    <div className="flex items-center gap-1 text-amber-500">
-                      <span className="text-base">★</span> 4.8
+              ))}
+            </div>
+          ) : error ? (
+            <Alert variant="destructive" className="rounded-2xl">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                No se pudieron cargar las tiendas. Por favor, intenta de nuevo.
+                <button onClick={() => refetch()} className="ml-4 underline font-bold">Reintentar</button>
+              </AlertDescription>
+            </Alert>
+          ) : filteredStores.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-border">
+              <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">🏪</div>
+              <h3 className="text-2xl font-bold text-foreground mb-2">No hay tiendas disponibles</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">Lo sentimos, no encontramos tiendas en esta categoría por el momento.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {filteredStores.map((store) => (
+                <Link key={store.id} href={`/tienda/${store.id}`}>
+                  <motion.div 
+                    whileHover={{ y: -8 }}
+                    className="group bg-white rounded-[2.5rem] overflow-hidden border border-border/50 shadow-sm hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 cursor-pointer h-full flex flex-col"
+                  >
+                    <div className={`h-48 relative overflow-hidden bg-gradient-to-br from-slate-700 to-slate-900`}>
+                      {store.logo_url ? (
+                        <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700" />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-6xl group-hover:scale-110 transition-transform duration-500">
+                          🏪
+                        </div>
+                      )}
+                      <div className="absolute top-4 left-4">
+                        <span className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-foreground shadow-sm">
+                          Recojo en tienda
+                        </span>
+                      </div>
                     </div>
-                    <span className="w-1 h-1 rounded-full bg-border"></span>
-                    <div className="flex items-center gap-1">
-                      <MapPin size={14} /> 1.2 km
+                    <div className="p-8 flex-1 flex flex-col">
+                      <div className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Tienda</div>
+                      <h3 className="text-xl font-display font-bold text-foreground mb-3 group-hover:text-primary transition-colors">{store.name}</h3>
+                      <p className="text-muted-foreground text-sm line-clamp-2 mb-6 leading-relaxed">{store.description || 'Sin descripción disponible.'}</p>
+                      <div className="mt-auto pt-6 border-t border-border/50 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                          <MapPin size={14} className="text-primary" />
+                          {store.city || 'Lima'}
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                          <ArrowRight size={18} />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-            
-            {/* View More Card */}
-            <button onClick={() => setLocation('/tiendas')} className="group flex-shrink-0 w-72 sm:w-80 bg-primary/5 rounded-3xl border-2 border-dashed border-primary/20 hover:border-primary hover:bg-primary/10 transition-colors duration-300 snap-start flex flex-col items-center justify-center p-8 text-primary">
-              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <ArrowRight size={28} />
-              </div>
-              <h3 className="text-xl font-bold">Ver las 50+ tiendas</h3>
-              <p className="text-primary/70 text-center mt-2 font-medium">Explora todo lo que tu distrito ofrece</p>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* CÓMO FUNCIONA */}
-      <section className="py-16 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">¿Cómo funciona Mercanto?</h2>
-            <p className="text-muted-foreground mt-4 text-lg">Tu marketplace local en 3 simple pasos. Fácil, rápido y directo con el vendedor.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Connecting line for desktop */}
-            <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-0.5 bg-gradient-to-r from-primary/10 via-primary/30 to-primary/10 -z-10"></div>
-
-            <div className="bg-white rounded-3xl p-8 border border-border/80 shadow-lg shadow-black/5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-center group">
-              <div className="w-24 h-24 mx-auto bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                📍
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-3">1. Elige tu ubicación</h3>
-              <p className="text-muted-foreground font-medium">Configura tu distrito para descubrir las tiendas y restaurantes disponibles en tu zona de entrega.</p>
+                  </motion.div>
+                </Link>
+              ))}
             </div>
-
-            <div className="bg-white rounded-3xl p-8 border border-border/80 shadow-lg shadow-black/5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-center group">
-              <div className="w-24 h-24 mx-auto bg-orange-50 text-orange-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner group-hover:scale-110 transition-transform duration-300 relative">
-                🛒
-                <span className="absolute -top-1 -right-1 bg-primary w-6 h-6 rounded-full border-2 border-white"></span>
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-3">2. Explora y compra</h3>
-              <p className="text-muted-foreground font-medium">Navega por miles de productos de negocios locales. Añade al carrito y paga de forma segura.</p>
-            </div>
-
-            <div className="bg-white rounded-3xl p-8 border border-border/80 shadow-lg shadow-black/5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-center group">
-              <div className="w-24 h-24 mx-auto bg-green-50 text-green-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                🛍️
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-3">3. Recoge o recibe</h3>
-              <p className="text-muted-foreground font-medium">Dirígete a la tienda a recoger tu pedido sin hacer colas o coordina la entrega directamente.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* BUSINESS CTA */}
-      <section className="py-16 lg:py-24 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-            
-            {/* Informational Card */}
-            <div className="bg-muted/50 rounded-[2.5rem] p-10 lg:p-14 border border-border">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-8 text-3xl">🤝</div>
-              <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-6">¿Tienes un negocio o tienda?</h2>
-              <p className="text-muted-foreground text-lg font-medium mb-8">
-                Únete a Mercanto y digitaliza tu negocio hoy mismo. Conecta con miles de vecinos en tu distrito que buscan comprar local.
-              </p>
-              
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <div className="mt-1 bg-green-100 text-green-600 p-1 rounded-full"><Check size={16} strokeWidth={3}/></div>
-                  <span className="text-foreground font-semibold text-lg">Sin costos fijos ni mensualidades</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="mt-1 bg-green-100 text-green-600 p-1 rounded-full"><Check size={16} strokeWidth={3}/></div>
-                  <span className="text-foreground font-semibold text-lg">Más clientes locales para tu negocio</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="mt-1 bg-green-100 text-green-600 p-1 rounded-full"><Check size={16} strokeWidth={3}/></div>
-                  <span className="text-foreground font-semibold text-lg">Panel de control fácil de usar desde el celular</span>
-                </li>
-              </ul>
-            </div>
-            
-            {/* Action Card */}
-            <div className="bg-secondary rounded-[2.5rem] p-10 lg:p-14 border border-secondary relative overflow-hidden flex flex-col justify-center">
-              {/* Decorative circles */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
-              
-              <div className="relative z-10 text-center lg:text-left">
-                <h3 className="text-3xl sm:text-5xl font-display font-extrabold text-white mb-6 leading-tight">
-                  Empieza a vender en <span className="text-primary">mercanto</span>
-                </h3>
-                <p className="text-secondary-foreground/80 text-xl font-medium mb-10">
-                  Crea tu tienda online en menos de 5 minutos.
-                </p>
-                
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                  <button className="px-8 py-4 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold text-lg shadow-xl shadow-primary/25 hover:-translate-y-0.5 transition-all duration-300">
-                    Crear mi tienda gratis
-                  </button>
-                  <button className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl font-bold text-lg backdrop-blur-sm hover:-translate-y-0.5 transition-all duration-300">
-                    Conocer más beneficios
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-          </div>
+          )}
         </div>
       </section>
     </div>

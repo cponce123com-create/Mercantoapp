@@ -13,7 +13,14 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  HealthStatus,
+  ListProductsByStoreParams,
+  ListStoresParams,
+  ProductListResponse,
+  StoreListResponse,
+  StoreResponse,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
 import type { ErrorType } from "../custom-fetch";
@@ -92,6 +99,305 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List stores
+ */
+export const getListStoresUrl = (params?: ListStoresParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/stores?${stringifiedParams}`
+    : `/api/stores`;
+};
+
+export const listStores = async (
+  params?: ListStoresParams,
+  options?: RequestInit,
+): Promise<StoreListResponse> => {
+  return customFetch<StoreListResponse>(getListStoresUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListStoresQueryKey = (params?: ListStoresParams) => {
+  return [`/api/stores`, ...(params ? [params] : [])] as const;
+};
+
+export const getListStoresQueryOptions = <
+  TData = Awaited<ReturnType<typeof listStores>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListStoresParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listStores>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListStoresQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listStores>>> = ({
+    signal,
+  }) => listStores(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listStores>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListStoresQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listStores>>
+>;
+export type ListStoresQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List stores
+ */
+
+export function useListStores<
+  TData = Awaited<ReturnType<typeof listStores>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListStoresParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listStores>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListStoresQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get store by ID
+ */
+export const getGetStoreUrl = (id: number) => {
+  return `/api/stores/${id}`;
+};
+
+export const getStore = async (
+  id: number,
+  options?: RequestInit,
+): Promise<StoreResponse> => {
+  return customFetch<StoreResponse>(getGetStoreUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStoreQueryKey = (id: number) => {
+  return [`/api/stores/${id}`] as const;
+};
+
+export const getGetStoreQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStore>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStore>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStoreQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStore>>> = ({
+    signal,
+  }) => getStore(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetStoreQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStore>>
+>;
+export type GetStoreQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get store by ID
+ */
+
+export function useGetStore<
+  TData = Awaited<ReturnType<typeof getStore>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStore>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStoreQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List products by store
+ */
+export const getListProductsByStoreUrl = (
+  storeId: number,
+  params?: ListProductsByStoreParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/products/store/${storeId}?${stringifiedParams}`
+    : `/api/products/store/${storeId}`;
+};
+
+export const listProductsByStore = async (
+  storeId: number,
+  params?: ListProductsByStoreParams,
+  options?: RequestInit,
+): Promise<ProductListResponse> => {
+  return customFetch<ProductListResponse>(
+    getListProductsByStoreUrl(storeId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListProductsByStoreQueryKey = (
+  storeId: number,
+  params?: ListProductsByStoreParams,
+) => {
+  return [
+    `/api/products/store/${storeId}`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getListProductsByStoreQueryOptions = <
+  TData = Awaited<ReturnType<typeof listProductsByStore>>,
+  TError = ErrorType<unknown>,
+>(
+  storeId: number,
+  params?: ListProductsByStoreParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listProductsByStore>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListProductsByStoreQueryKey(storeId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listProductsByStore>>
+  > = ({ signal }) =>
+    listProductsByStore(storeId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!storeId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listProductsByStore>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListProductsByStoreQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listProductsByStore>>
+>;
+export type ListProductsByStoreQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List products by store
+ */
+
+export function useListProductsByStore<
+  TData = Awaited<ReturnType<typeof listProductsByStore>>,
+  TError = ErrorType<unknown>,
+>(
+  storeId: number,
+  params?: ListProductsByStoreParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listProductsByStore>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListProductsByStoreQueryOptions(
+    storeId,
+    params,
+    options,
+  );
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
