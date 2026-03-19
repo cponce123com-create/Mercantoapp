@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { User, Package, MapPin, CreditCard, ChevronRight, CheckCircle2, Clock, Map } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function ProfilePage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('profile');
 
   const orders = [
@@ -99,14 +101,17 @@ export default function ProfilePage() {
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
                   <div className="flex-shrink-0">
                     <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-rose-400 flex items-center justify-center text-4xl font-display font-bold text-white shadow-lg">
-                      JR
+                      {user?.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
                     </div>
                   </div>
                   
                   <div className="flex-1 text-center md:text-left space-y-4">
                     <div>
-                      <h2 className="text-2xl font-bold text-foreground">Juan Rodriguez</h2>
-                      <p className="text-muted-foreground">juan.rodriguez@gmail.com</p>
+                      <h2 className="text-2xl font-bold text-foreground">{user?.name}</h2>
+                      <p className="text-muted-foreground">{user?.email}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded-full uppercase tracking-wider">
+                        {user?.role}
+                      </span>
                     </div>
                     
                     <div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground">

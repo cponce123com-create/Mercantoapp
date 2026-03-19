@@ -5,12 +5,15 @@ import { CATEGORIES } from "@/data/mock";
 import { cn } from "@/lib/utils";
 import { useCategory } from "@/lib/CategoryContext";
 import { useCart } from "@/lib/CartContext";
+import { useAuth } from "@/lib/AuthContext";
+import { LogOut } from "lucide-react";
 
 export function Navbar() {
   const { activeCategory, setActiveCategory } = useCategory();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { openCart, itemCount } = useCart();
   const [location] = useLocation();
+  const { user, logout } = useAuth();
 
   // Hide regular navbar on admin page
   if (location.startsWith('/admin')) {
@@ -75,10 +78,31 @@ export function Navbar() {
               <MapPin size={20} className="text-muted-foreground" />
               <span>Mapa</span>
             </Link>
-            <Link href="/perfil" className="hidden sm:flex items-center gap-2 px-3 py-2.5 hover:bg-muted rounded-xl transition-colors duration-200 text-sm font-semibold text-foreground">
-              <User size={20} className="text-muted-foreground" />
-              <span>Mi Perfil</span>
-            </Link>
+            {user ? (
+              <>
+                {user.role === 'admin' && (
+                  <Link href="/admin" className="hidden sm:flex items-center gap-2 px-3 py-2.5 hover:bg-muted rounded-xl transition-colors duration-200 text-sm font-semibold text-foreground">
+                    <User size={20} className="text-primary" />
+                    <span>Admin</span>
+                  </Link>
+                )}
+                <Link href="/perfil" className="hidden sm:flex items-center gap-2 px-3 py-2.5 hover:bg-muted rounded-xl transition-colors duration-200 text-sm font-semibold text-foreground">
+                  <User size={20} className="text-muted-foreground" />
+                  <span>{user.name.split(' ')[0]}</span>
+                </Link>
+                <button 
+                  onClick={logout}
+                  className="hidden sm:flex items-center gap-2 px-3 py-2.5 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200 text-sm font-semibold text-foreground"
+                >
+                  <LogOut size={20} className="text-muted-foreground group-hover:text-red-600" />
+                </button>
+              </>
+            ) : (
+              <Link href="/login" className="hidden sm:flex items-center gap-2 px-3 py-2.5 hover:bg-muted rounded-xl transition-colors duration-200 text-sm font-semibold text-foreground">
+                <User size={20} className="text-muted-foreground" />
+                <span>Ingresar</span>
+              </Link>
+            )}
             <button 
               onClick={openCart}
               className="relative p-3 bg-muted/50 hover:bg-accent hover:text-primary rounded-xl transition-colors duration-200"

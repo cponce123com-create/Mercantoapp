@@ -7,6 +7,8 @@ import healthRouter from '@/routes/health';
 import storesRouter from '@/routes/stores';
 import productsRouter from '@/routes/products';
 import ordersRouter from '@/routes/orders';
+import authRouter from '@/routes/auth';
+import { authMiddleware, roleGuard } from '@/middleware/auth';
 
 const app = new Hono();
 
@@ -19,9 +21,15 @@ app.use(errorHandler);
 app.route('/api', healthRouter);
 
 // API routes
+app.route('/api/auth', authRouter);
 app.route('/api/stores', storesRouter);
 app.route('/api/products', productsRouter);
 app.route('/api/orders', ordersRouter);
+
+// Rutas administrativas de ejemplo (protegidas por rol 'admin')
+app.get('/api/admin/dashboard', authMiddleware, roleGuard(['admin']), (c) => {
+  return c.json({ success: true, message: 'Bienvenido al panel de administración' });
+});
 
 // Root endpoint
 app.get('/', (c) => {

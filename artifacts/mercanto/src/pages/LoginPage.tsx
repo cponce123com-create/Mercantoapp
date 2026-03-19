@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function LoginPage() {
+  const { login: setAuthUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -14,18 +16,19 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/sign-in/email", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
+      const data = await res.json();
+      
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Error al iniciar sesión");
+        throw new Error(data.error || "Error al iniciar sesión");
       }
 
+      setAuthUser(data.user);
       navigate("/");
     } catch (err: any) {
       setError(err.message);

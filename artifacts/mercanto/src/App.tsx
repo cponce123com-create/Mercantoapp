@@ -5,6 +5,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { CategoryProvider } from "@/lib/CategoryContext";
 import { CartProvider } from "@/lib/CartContext";
+import { AuthProvider, useAuth } from "@/lib/AuthContext";
+import { useLocation } from "wouter";
+import { useEffect } from "react";
 // Custom components
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -22,6 +25,25 @@ import RegisterPage from "@/pages/RegisterPage";
 
 const queryClient = new QueryClient();
 
+function ProtectedRoute({ path, component: Component, roles }: { path: string, component: React.ComponentType<any>, roles?: string[] }) {
+  const { user, loading } = useAuth();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/login");
+    } else if (!loading && user && roles && !roles.includes(user.role)) {
+      navigate("/");
+    }
+  }, [user, loading, navigate, roles]);
+
+  if (loading) return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
+  if (!user) return null;
+  if (roles && !roles.includes(user.role)) return null;
+
+  return <Route path={path} component={Component} />;
+}
+
 function Router() {
   return (
     <Switch>
@@ -30,8 +52,8 @@ function Router() {
       <Route path="/tienda/:id" component={StoreDetail} />
       <Route path="/tacora" component={Tacora} />
       <Route path="/mapa" component={MapPage} />
-      <Route path="/perfil" component={ProfilePage} />
-      <Route path="/admin" component={AdminPage} />
+      <ProtectedRoute path="/perfil" component={ProfilePage} />
+      <ProtectedRoute path="/admin" component={AdminPage} roles={['admin']} />
       <Route path="/pedido" component={CheckoutPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/registro" component={RegisterPage} />
@@ -43,9 +65,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <CategoryProvider>
-        <CartProvider>
-          <TooltipProvider>
+      <AuthProvider>
+        <CategoryProvider>
+          <CartProvider>
+            <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <div className="flex flex-col min-h-screen">
                 <Navbar />
@@ -57,9 +80,10 @@ function App() {
               </div>
             </WouterRouter>
             <Toaster />
-          </TooltipProvider>
-        </CartProvider>
-      </CategoryProvider>
+            </TooltipProvider>
+          </CartProvider>
+        </CategoryProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

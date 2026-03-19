@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function RegisterPage() {
+  const { login: setAuthUser } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,18 +18,19 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/sign-up/email", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ name, email, password, role }),
       });
 
+      const data = await res.json();
+      
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Error al registrarse");
+        throw new Error(data.error || "Error al registrarse");
       }
 
+      setAuthUser(data.user);
       navigate("/");
     } catch (err: any) {
       setError(err.message);
