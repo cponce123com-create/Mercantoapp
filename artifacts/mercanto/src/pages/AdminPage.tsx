@@ -245,9 +245,9 @@ export default function AdminPage() {
     } catch (err: any) {
       setOrdersError(err.message ?? "Error al cargar pedidos");
       } finally {
-      setActionLoading(null);
+      setActionLoading(false);
     }
-  };
+  },[]);
 
   const handleUpdateStore = async (e: React.FormEvent) => {
     e.preventDefault();
