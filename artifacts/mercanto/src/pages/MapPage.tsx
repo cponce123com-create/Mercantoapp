@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useListStores } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { filterStores } from "@/lib/categoryUtils";
 
 // Leaflet imports
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
@@ -76,25 +77,8 @@ export default function MapPage() {
   };
 
   const filteredStores = useMemo(() => {
-    return stores.filter(store => {
-      const categoryMap: Record<string, string> = {
-        'restaurants': 'Restaurante',
-        'fruits': 'Frutas y Verduras',
-        'stores': 'Minimarket',
-        'clothes': 'Ropa',
-        'home': 'Hogar',
-        'tech': 'Tecnología',
-        'pharmacy': 'Salud'
-      };
-      
-      const matchesCategory = activeCategory === "all" || 
-                             (store.description || "").includes(categoryMap[activeCategory] || "");
-      
-      const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            (store.description || "").toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [stores, activeCategory, searchQuery]);
+    return filterStores(stores, searchQuery, activeCategory);
+  }, [stores, searchQuery, activeCategory]);
 
   const handleStoreSelect = (store: any) => {
     setSelectedStoreId(store.id);
@@ -180,7 +164,7 @@ export default function MapPage() {
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 bg-gradient-to-br from-slate-700 to-slate-900 overflow-hidden`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 overflow-hidden border-2 border-primary/20`}>
                       {store.logo_url ? (
                         <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover" />
                       ) : (
@@ -226,7 +210,7 @@ export default function MapPage() {
             
             {filteredStores.map(store => {
               const position = getStoreCoordinates(store.id);
-              const customIcon = createCustomIcon("bg-slate-700", '🏪');
+              const customIcon = createCustomIcon("bg-slate-700", store.logo_url ? '🏪' : '🏪');
               
               return (
                 <Marker 
@@ -241,13 +225,12 @@ export default function MapPage() {
                 >
                   <Popup className="rounded-xl overflow-hidden shadow-xl border-none">
                     <div className="p-1 -m-1">
-                      <div className={`h-16 -mx-4 -mt-4 bg-gradient-to-r from-slate-700 to-slate-900 mb-3 flex items-center justify-center relative overflow-hidden`}>
-                        {store.logo_url && <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover opacity-50" />}
-                        <div className="absolute -bottom-4 bg-white rounded-full p-1 shadow-sm">
-                           <div className="w-8 h-8 flex items-center justify-center text-lg">
-                             {store.logo_url ? '' : '🏪'}
-                           </div>
-                        </div>
+                      <div className={`h-20 -mx-4 -mt-4 bg-gradient-to-r from-slate-700 to-slate-900 mb-3 flex items-center justify-center relative overflow-hidden`}>
+                        {store.logo_url ? (
+                          <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-4xl">🏪</div>
+                        )}
                       </div>
                       <h3 className="font-bold text-base text-center mt-3 mb-1">{store.name}</h3>
                       <p className="text-xs text-muted-foreground text-center mb-3">San Ramón</p>

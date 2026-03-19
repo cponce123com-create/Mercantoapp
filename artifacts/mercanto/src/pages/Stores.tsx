@@ -6,6 +6,7 @@ import { CATEGORIES } from "@/data/mock";
 import { useListStores } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { filterStores } from "@/lib/categoryUtils";
 
 export default function Stores() {
   const [, setLocation] = useLocation();
@@ -30,25 +31,7 @@ export default function Stores() {
   const stores = data?.data || [];
 
   const filteredStores = useMemo(() => {
-    return stores.filter(store => {
-      const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           (store.description || "").toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const categoryMap: Record<string, string> = {
-        'restaurants': 'Restaurante',
-        'fruits': 'Frutas y Verduras',
-        'stores': 'Minimarket',
-        'clothes': 'Ropa',
-        'home': 'Hogar',
-        'tech': 'Tecnología',
-        'pharmacy': 'Salud'
-      };
-      
-      const matchesCategory = selectedCategory === "all" || 
-                             (store.description || "").includes(categoryMap[selectedCategory] || "");
-      
-      return matchesSearch && matchesCategory;
-    });
+    return filterStores(stores, searchQuery, selectedCategory);
   }, [stores, searchQuery, selectedCategory]);
 
   return (
@@ -165,12 +148,12 @@ export default function Stores() {
                 <p className="text-muted-foreground text-lg max-w-md">
                   No hay resultados para "{searchQuery}" en la categoría seleccionada. Intenta buscar con otros términos.
                 </p>
-                <button 
-                  onClick={() => { setSearchQuery(""); setSelectedCategory("all"); }}
-                  className="mt-8 px-6 py-3 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl font-bold transition-colors"
-                >
-                  Limpiar filtros
-                </button>
+            <button 
+              onClick={() => { setSearchQuery(""); setSelectedCategory("all"); window.history.replaceState({}, '', '/tiendas'); }}
+              className="mt-8 px-6 py-3 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl font-bold transition-colors"
+            >
+              Limpiar filtros
+            </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
