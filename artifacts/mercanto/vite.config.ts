@@ -6,9 +6,9 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-
   const port = Number(env.PORT || 3000);
   const basePath = env.BASE_PATH || '/';
+  const apiUrl = env.VITE_API_URL || 'https://mercanto-api.onrender.com';
 
   return {
     base: basePath,
@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       runtimeErrorOverlay(),
       ...(process.env.NODE_ENV !== "production" &&
-      process.env.REPL_ID !== undefined
+        process.env.REPL_ID !== undefined
         ? [
             import("@replit/vite-plugin-cartographer").then((m) =>
               m.cartographer({
@@ -50,11 +50,25 @@ export default defineConfig(({ mode }) => {
         strict: true,
         deny: ["**/.*"],
       },
+      proxy: {
+        '/api': {
+          target: apiUrl,
+          changeOrigin: true,
+          secure: true,
+        },
+      },
     },
     preview: {
       port,
       host: "0.0.0.0",
       allowedHosts: true,
+      proxy: {
+        '/api': {
+          target: apiUrl,
+          changeOrigin: true,
+          secure: true,
+        },
+      },
     },
   };
 });
