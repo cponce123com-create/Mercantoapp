@@ -22,7 +22,8 @@ import {
   Edit2,
   Save,
   X,
-} from "lucide-import { useAuth, API_URL } from "@/lib/AuthContext";
+} from "lucide-react";
+import { useAuth, API_URL } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
