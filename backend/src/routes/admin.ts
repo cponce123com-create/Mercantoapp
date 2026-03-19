@@ -5,7 +5,7 @@ import { storesController } from '@/controllers/stores';
 import { ordersController } from '@/controllers/orders';
 import { authMiddleware, roleGuard } from '@/middleware/auth';
 import { AppError } from '@/utils/types';
-import { updateStoreStatusSchema, listStoresSchema, storeIdSchema } from '@/validators/stores';
+import { updateStoreStatusSchema, listStoresSchema, storeIdSchema, updateStoreSchema } from '@/validators/stores';
 import { listOrdersSchema } from '@/validators/orders';
 
 const adminRouter = new Hono();
@@ -256,6 +256,25 @@ adminRouter.patch('/stores/:id/status', async (c) => {
       return c.json({ success: false, error: 'Validación fallida', errors: (error as any).errors }, 400);
     }
     return c.json({ success: false, error: 'Error al actualizar estado de tienda' }, 500);
+  }
+});
+
+// Editar tienda (admin)
+adminRouter.put('/stores/:id', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'), 10);
+    const body = await c.req.json();
+    const input = updateStoreSchema.parse(body);
+    const store = await storesController.updateStore(id, input);
+    return c.json({ success: true, data: store });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return c.json({ success: false, error: error.message }, error.statusCode);
+    }
+    if (error instanceof Error && error.name === 'ZodError') {
+      return c.json({ success: false, error: 'Validación fallida', errors: (error as any).errors }, 400);
+    }
+    return c.json({ success: false, error: 'Error al actualizar tienda' }, 500);
   }
 });
 

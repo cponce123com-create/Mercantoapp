@@ -19,6 +19,9 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Edit2,
+  Save,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -185,6 +188,11 @@ export default function AdminPage() {
   const [storesStatusFilter, setStoresStatusFilter] = useState<string>("");
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
+  // Store Editing
+  const [editingStore, setEditingStore] = useState<AdminStore | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+
   // Orders
   const [ordersList, setOrdersList] = useState<AdminOrder[]>([]);
   const [ordersPagination, setOrdersPagination] = useState<Pagination>({ page: 1, limit: 15, total: 0, pages: 1 });
@@ -236,10 +244,52 @@ export default function AdminPage() {
       setOrdersPagination(data.pagination);
     } catch (err: any) {
       setOrdersError(err.message ?? "Error al cargar pedidos");
-    } finally {
-      setOrdersLoading(false);
+      } finally {
+      setActionLoading(null);
     }
-  }, []);
+  };
+
+  const handleUpdateStore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStore) return;
+
+    setEditLoading(true);
+    try {
+      await apiFetch(`/api/admin/stores/${editingStore.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: editingStore.name,
+          description: editingStore.description,
+          email: editingStore.email,
+          phone: editingStore.phone,
+          address: editingStore.address,
+          city: editingStore.city,
+          country: editingStore.country,
+          is_active: editingStore.is_active,
+        }),
+      });
+
+      toast({
+        title: "Tienda actualizada",
+        description: "Los cambios han sido guardados correctamente.",
+      });
+
+      // Actualizar lista local
+      setStoresList((prev) =>
+        prev.map((s) => (s.id === editingStore.id ? editingStore : s))
+      );
+      setIsEditModalOpen(false);
+      setEditingStore(null);
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message ?? "No se pudo actualizar la tienda",
+        variant: "destructive",
+      });
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   // ============================================================================
   // EFFECTS
@@ -728,6 +778,16 @@ export default function AdminPage() {
                                     Rechazar
                                   </button>
                                 )}
+                                <button
+                                  onClick={() => {
+                                    setEditingStore(store);
+                                    setIsEditModalOpen(true);
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors"
+                                  title="Editar ubicación y datos"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -899,6 +959,128 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Store Modal */}
+      {isEditModalOpen && editingStore && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                <StoreIcon size={18} className="text-primary" />
+                Editar Tienda: {editingStore.name}
+              </h3>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateStore} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</label>
+                  <input
+                    type="text"
+                    value={editingStore.name}
+                    onChange={(e) => setEditingStore({ ...editingStore, name: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email</label>
+                  <input
+                    type="email"
+                    value={editingStore.email}
+                    onChange={(e) => setEditingStore({ ...editingStore, email: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Descripción</label>
+                <textarea
+                  value={editingStore.description ?? ""}
+                  onChange={(e) => setEditingStore({ ...editingStore, description: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all min-h-[80px]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ciudad / Ubicación</label>
+                  <input
+                    type="text"
+                    value={editingStore.city ?? ""}
+                    onChange={(e) => setEditingStore({ ...editingStore, city: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    placeholder="Ej: San Ramón, Chanchamayo, Junín"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dirección</label>
+                  <input
+                    type="text"
+                    value={editingStore.address ?? ""}
+                    onChange={(e) => setEditingStore({ ...editingStore, address: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Teléfono</label>
+                  <input
+                    type="text"
+                    value={editingStore.phone ?? ""}
+                    onChange={(e) => setEditingStore({ ...editingStore, phone: e.target.value })}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  />
+                </div>
+                <div className="flex items-center gap-3 pt-6">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    checked={editingStore.is_active}
+                    onChange={(e) => setEditingStore({ ...editingStore, is_active: e.target.checked })}
+                    className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary"
+                  />
+                  <label htmlFor="is_active" className="text-sm font-medium text-slate-700 cursor-pointer">
+                    Tienda Activa
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  {editLoading ? (
+                    <RefreshCw size={18} className="animate-spin" />
+                  ) : (
+                    <Save size={18} />
+                  )}
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
