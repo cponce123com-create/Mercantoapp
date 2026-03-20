@@ -1,11 +1,6 @@
 import { useState } from "react";
-<<<<<<< HEAD
-import { useLocation } from "wouter";
-import { useAuth, API_URL } from "@/lib/AuthContext";
-=======
 import { useLocation, Link } from "wouter";
-import { useAuth } from "@/lib/AuthContext";
->>>>>>> f4f6938 (Feat: Pasada de calidad final al frontend (SEO, A11y, textos, tests))
+import { useAuth, API_URL } from "@/lib/AuthContext";
 
 export default function LoginPage() {
   const { login: setAuthUser } = useAuth();
@@ -29,6 +24,7 @@ export default function LoginPage() {
       });
 
       const data = await res.json();
+
       if (!res.ok) {
         throw new Error(data.error || "Error al iniciar sesión");
       }
@@ -50,7 +46,10 @@ export default function LoginPage() {
         </h1>
 
         {error && (
-          <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4 border border-red-200" role="alert">
+          <div
+            className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4 border border-red-200"
+            role="alert"
+          >
             {error}
           </div>
         )}
@@ -91,11 +90,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-<<<<<<< HEAD
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 rounded-lg transition disabled:opacity-50"
-=======
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
->>>>>>> f4f6938 (Feat: Pasada de calidad final al frontend (SEO, A11y, textos, tests))
           >
             {loading ? "Iniciando sesión..." : "Iniciar sesión"}
           </button>
