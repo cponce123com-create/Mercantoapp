@@ -24,24 +24,27 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-// Create custom colored markers based on category
-const createCustomIcon = (colorClass: string, icon: string) => {
-  let bgColor = "#e11d48"; // default primary
-  if (colorClass.includes("orange")) bgColor = "#f97316";
-  if (colorClass.includes("green")) bgColor = "#22c55e";
-  if (colorClass.includes("blue")) bgColor = "#3b82f6";
-  if (colorClass.includes("pink")) bgColor = "#ec4899";
-  if (colorClass.includes("amber")) bgColor = "#f59e0b";
-  if (colorClass.includes("slate")) bgColor = "#64748b";
-  if (colorClass.includes("teal")) bgColor = "#14b8a6";
-
-  return L.divIcon({
-    className: "custom-div-icon",
-    html: `<div style="background-color: ${bgColor}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); border: 2px solid white;">${icon}</div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -18]
-  });
+// Create custom colored markers with store logos
+const createCustomIcon = (logoUrl: string | null) => {
+  if (logoUrl) {
+    // Create icon with store logo
+    return L.divIcon({
+      className: "custom-div-icon",
+      html: `<div style="width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: white; border: 3px solid #e11d48; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2); overflow: hidden;"><img src="${logoUrl}" alt="store" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>`,
+      iconSize: [44, 44],
+      iconAnchor: [22, 22],
+      popupAnchor: [0, -22]
+    });
+  } else {
+    // Fallback to colored icon
+    return L.divIcon({
+      className: "custom-div-icon",
+      html: `<div style="background-color: #e11d48; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2); border: 3px solid white;">🏪</div>`,
+      iconSize: [44, 44],
+      iconAnchor: [22, 22],
+      popupAnchor: [0, -22]
+    });
+  }
 };
 
 function MapUpdater({ center }: { center: [number, number] }) {
@@ -210,7 +213,7 @@ export default function MapPage() {
             
             {filteredStores.map(store => {
               const position = getStoreCoordinates(store.id);
-              const customIcon = createCustomIcon("bg-slate-700", store.logo_url ? '🏪' : '🏪');
+              const customIcon = createCustomIcon(store.logo_url);
               
               return (
                 <Marker 
