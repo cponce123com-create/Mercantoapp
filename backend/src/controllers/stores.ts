@@ -1,4 +1,4 @@
-import { eq, and, desc, count, sum } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { getDb, stores, Store, NewStore } from '@/db';
 import { AppError } from '@/utils/types';
 import type { CreateStoreInput, UpdateStoreInput, ListStoresInput } from '@/validators/stores';
@@ -19,6 +19,7 @@ export const storesController = {
         country: input.country,
         logo_url: input.logo_url,
         is_active: input.is_active,
+        status: 'pending',
       };
 
       const result = await db.insert(stores).values(newStore).returning();
@@ -92,20 +93,6 @@ export const storesController = {
     const result = await db
       .update(stores)
       .set(updateData)
-      .where(eq(stores.id, id))
-      .returning();
-
-    return result[0];
-  },
-
-  async updateStoreStatus(id: number, status: 'pending' | 'approved' | 'rejected'): Promise<Store> {
-    const db = getDb();
-
-    await this.getStoreById(id);
-
-    const result = await db
-      .update(stores)
-      .set({ status, updated_at: new Date() })
       .where(eq(stores.id, id))
       .returning();
 

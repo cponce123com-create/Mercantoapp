@@ -1,405 +1,223 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import {
-  LayoutDashboard,
-  Store as StoreIcon,
-  Package,
-  ShoppingCart,
-  Users,
-  Settings,
+import { useAuth } from "@/lib/AuthContext";
+import { 
+  LayoutDashboard, 
+  Store as StoreIcon, 
+  Package, 
+  ShoppingCart, 
+  Users, 
+  Settings, 
   ArrowLeft,
   TrendingUp,
   Activity,
   DollarSign,
+  MoreVertical,
   CheckCircle2,
   XCircle,
   Clock,
-  RefreshCw,
   AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
-  Edit2,
-  Save,
-  X,
+  Loader,
+  Check,
+  X
 } from "lucide-react";
-import { useAuth, API_URL } from "@/lib/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 
-// ============================================================================
-// TIPOS
-// ============================================================================
-interface DashboardStores {  
-total: number;
-  pending: number;
-  approved: number;
-  rejected: number;
+interface DashboardMetrics {
+  totalOrdersToday: number;
+  totalRevenueToday: number;
+  totalActiveStores: number;
+  totalUsers: number;
+  pendingStores: number;
+  statusBreakdown: Array<{ status: string; count: number }>;
+  salesByDay: Array<{ date: string; total: number }>;
 }
 
-interface DashboardOrders {
-  total: number;
-  pending: number;
-  confirmed: number;
-  delivered: number;
-  cancelled: number;
-}
-
-interface RecentOrder {
-  id: number;
-  status: string;
-  total_amount: string;
-  created_at: string;
-  user_name: string | null;
-  user_email: string | null;
-  store_name: string | null;
-  store_id: number;
-  user_id: number;
-}
-
-interface DailyRevenue {
-  day: string;
-  total: string;
-  count: number;
-}
-
-interface DashboardData {
-  stores: DashboardStore;
-  orders: DashboardOrders;
-  revenue: { total: number };
-  users: { total: number };
-  products: { total: number };
-  recentOrders: RecentOrder[];
-  dailyRevenue: DailyRevenue[];
-}
-
-interface AdminStore {
+interface Store {
   id: number;
   name: string;
-  description: string | null;
   email: string;
-  phone: string | null;
-  address: string | null;
-  city: string | null;
-  country: string | null;
-  logo_url: string | null;
-  status: "pending" | "approved" | "rejected";
+  status: string;
   is_active: boolean;
   created_at: string;
   owner_id: number;
-  owner_name: string | null;
-  owner_email: string | null;
 }
 
-interface AdminOrder {
+interface Order {
   id: number;
-  status: string;
-  total_amount: string;
-  shipping_address: string;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
   user_id: number;
   store_id: number;
-  user_name: string | null;
-  user_email: string | null;
-  store_name: string | null;
+  status: string;
+  total_amount: string;
+  created_at: string;
 }
 
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  pages: number;
-}
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-const apiFetch = async (endpoint: string, options?: RequestInit) => {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;
-  const res = await fetch(url, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) },
-    ...options,
-  });
-  
-  const contentType = res.headers.get("content-type");
-  if (!contentType || !contentType.includes("application/json")) {
-    throw new Error(`Error del servidor: Se esperaba JSON pero se recibió ${contentType || 'nada'}. Verifica la URL de la API.`);
-  }
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? "Error en la solicitud");
-  return data;
-};
-
-const formatCurrency = (value: number | string) =>
-  `S/ ${parseFloat(String(value)).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-const formatDate = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-};
-
-const getOrderStatusBadge = (status: string) => {
-  switch (status) {
-    case "delivered":
-      return <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><CheckCircle2 size={12} /> Entregado</span>;
-    case "confirmed":
-      return <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><Activity size={12} /> Confirmado</span>;
-    case "shipped":
-      return <span className="px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><Package size={12} /> Enviado</span>;
-    case "pending":
-      return <span className="px-2.5 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><Clock size={12} /> Pendiente</span>;
-    case "cancelled":
-      return <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><XCircle size={12} /> Cancelado</span>;
-    default:
-      return <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-bold w-max">{status}</span>;
-  }
-};
-
-const getStoreStatusBadge = (status: string) => {
-  switch (status) {
-    case "approved":
-      return <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><CheckCircle2 size={12} /> Aprobada</span>;
-    case "pending":
-      return <span className="px-2.5 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><Clock size={12} /> Pendiente</span>;
-    case "rejected":
-      return <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><XCircle size={12} /> Rechazada</span>;
-    default:
-      return <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-bold w-max">{status}</span>;
-  }
-};
-
-// ============================================================================
-// COMPONENTE PRINCIPAL
-// ============================================================================
 export default function AdminPage() {
-  const { user, logout } = useAuth();
-  const [, navigate] = useLocation();
-  const { toast } = useToast();
-
-  const [activeTab, setActiveTab] = useState<"dashboard" | "stores" | "orders">("dashboard");
-
-  // Dashboard
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
-  const [dashboardError, setDashboardError] = useState<string | null>(null);
-
-  // Stores
-  const [storesList, setStoresList] = useState<AdminStore[]>([]);
-  const [storesPagination, setStoresPagination] = useState<Pagination>({ page: 1, limit: 15, total: 0, pages: 1 });
-  const [storesLoading, setStoresLoading] = useState(false);
-  const [storesError, setStoresError] = useState<string | null>(null);
-  const [storesPage, setStoresPage] = useState(1);
-  const [storesStatusFilter, setStoresStatusFilter] = useState<string>("");
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'stores' | 'orders'>('dashboard');
+  
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  // Store Editing
-  const [editingStore, setEditingStore] = useState<AdminStore | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editLoading, setEditLoading] = useState(false);
-
-  // Orders
-  const [ordersList, setOrdersList] = useState<AdminOrder[]>([]);
-  const [ordersPagination, setOrdersPagination] = useState<Pagination>({ page: 1, limit: 15, total: 0, pages: 1 });
-  const [ordersLoading, setOrdersLoading] = useState(false);
-  const [ordersError, setOrdersError] = useState<string | null>(null);
-  const [ordersPage, setOrdersPage] = useState(1);
-  const [ordersStatusFilter, setOrdersStatusFilter] = useState<string>("");
-
-  // ============================================================================
-  // FETCH FUNCTIONS
-  // ============================================================================
-  const fetchDashboard = useCallback(async () => {
-    setDashboardLoading(true);
-    setDashboardError(null);
-    try {
-      const data = await apiFetch("/api/admin/dashboard");
-      setDashboardData(data.data);
-    } catch (err: any) {
-      setDashboardError(err.message ?? "Error al cargar el dashboard");
-    } finally {
-      setDashboardLoading(false);
+  // Redirect if not admin
+  useEffect(() => {
+    if (user && user.role !== 'admin') {
+      setLocation('/');
     }
-  }, []);
+  }, [user, setLocation]);
 
-  const fetchStores = useCallback(async (page: number, status: string) => {
-    setStoresLoading(true);
-    setStoresError(null);
+  // Fetch dashboard metrics
+  const fetchMetrics = async () => {
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "15" });
-      if (status) params.set("status", status);
-      const data = await apiFetch(`/api/admin/stores?${params.toString()}`);
-      setStoresList(data.data);
-      setStoresPagination(data.pagination);
-    } catch (err: any) {
-      setStoresError(err.message ?? "Error al cargar tiendas");
+      setLoading(true);
+      const res = await fetch('/api/admin/dashboard/metrics');
+      const data = await res.json();
+      if (res.ok) {
+        setMetrics(data.data);
+      } else {
+        setError(data.error || 'Error al cargar métricas');
+      }
+    } catch (err) {
+      setError('Error al conectar con el servidor');
     } finally {
-      setStoresLoading(false);
-    }
-  }, []);
-
-  const fetchOrders = useCallback(async (page: number, status: string) => {
-    setOrdersLoading(true);
-    setOrdersError(null);
-    try {
-      const params = new URLSearchParams({ page: String(page), limit: "15" });
-      if (status) params.set("status", status);
-      const data = await apiFetch(`/api/admin/orders?${params.toString()}`);
-      setOrdersList(data.data);
-      setOrdersPagination(data.pagination);
-    } catch (err: any) {
-      setOrdersError(err.message ?? "Error al cargar pedidos");
-      } finally {
-      setActionLoading(false);
-    }
-  },[]);
-
-  const handleUpdateStore = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingStore) return;
-
-    setEditLoading(true);
-    try {
-      await apiFetch(`/api/admin/stores/${editingStore.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          name: editingStore.name,
-          description: editingStore.description,
-          email: editingStore.email,
-          phone: editingStore.phone,
-          address: editingStore.address,
-          city: editingStore.city,
-          country: editingStore.country,
-          is_active: editingStore.is_active,
-        }),
-      });
-
-      toast({
-        title: "Tienda actualizada",
-        description: "Los cambios han sido guardados correctamente.",
-      });
-
-      // Actualizar lista local
-      setStoresList((prev) =>
-        prev.map((s) => (s.id === editingStore.id ? editingStore : s))
-      );
-      setIsEditModalOpen(false);
-      setEditingStore(null);
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err.message ?? "No se pudo actualizar la tienda",
-        variant: "destructive",
-      });
-    } finally {
-      setEditLoading(false);
+      setLoading(false);
     }
   };
 
-  // ============================================================================
-  // EFFECTS
-  // ============================================================================
-  useEffect(() => {
-    if (activeTab === "dashboard") fetchDashboard();
-  }, [activeTab, fetchDashboard]);
-
-  useEffect(() => {
-    if (activeTab === "stores") fetchStores(storesPage, storesStatusFilter);
-  }, [activeTab, storesPage, storesStatusFilter, fetchStores]);
-
-  useEffect(() => {
-    if (activeTab === "orders") fetchOrders(ordersPage, ordersStatusFilter);
-  }, [activeTab, ordersPage, ordersStatusFilter, fetchOrders]);
-
-  // ============================================================================
-  // ACTIONS
-  // ============================================================================
-  const handleStoreAction = async (storeId: number, action: "approve" | "reject") => {
-    setActionLoading(storeId);
+  // Fetch pending stores
+  const fetchStores = async () => {
     try {
-      await apiFetch(`/api/admin/stores/${storeId}/${action}`, { method: "PATCH" });
-      toast({
-        title: action === "approve" ? "Tienda aprobada" : "Tienda rechazada",
-        description: action === "approve"
-          ? "La tienda ha sido aprobada exitosamente."
-          : "La tienda ha sido rechazada.",
-      });
-      // Actualizar la lista localmente para respuesta inmediata
-      setStoresList((prev) =>
-        prev.map((s) =>
-          s.id === storeId ? { ...s, status: action === "approve" ? "approved" : "rejected" } : s
-        )
-      );
-      // Refrescar dashboard si está activo
-      if (activeTab === "dashboard") fetchDashboard();
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err.message ?? "No se pudo completar la acción",
-        variant: "destructive",
-      });
+      setLoading(true);
+      const res = await fetch('/api/stores?status=pending&limit=100');
+      const data = await res.json();
+      if (res.ok) {
+        setStores(data.data);
+      } else {
+        setError(data.error || 'Error al cargar tiendas');
+      }
+    } catch (err) {
+      setError('Error al conectar con el servidor');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch recent orders
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/admin/orders/recent?limit=20');
+      const data = await res.json();
+      if (res.ok) {
+        setOrders(data.data);
+      } else {
+        setError(data.error || 'Error al cargar pedidos');
+      }
+    } catch (err) {
+      setError('Error al conectar con el servidor');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load data based on active tab
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      fetchMetrics();
+    } else if (activeTab === 'stores') {
+      fetchStores();
+    } else if (activeTab === 'orders') {
+      fetchOrders();
+    }
+  }, [activeTab]);
+
+  const approveStore = async (storeId: number) => {
+    try {
+      setActionLoading(storeId);
+      const res = await fetch(`/api/stores/${storeId}/approve`, { method: 'POST' });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setStores(stores.map(s => s.id === storeId ? { ...s, status: 'approved' } : s));
+      } else {
+        setError(data.error || 'Error al aprobar tienda');
+      }
+    } catch (err) {
+      setError('Error al conectar con el servidor');
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
+  const rejectStore = async (storeId: number) => {
+    try {
+      setActionLoading(storeId);
+      const res = await fetch(`/api/stores/${storeId}/reject`, { method: 'POST' });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setStores(stores.map(s => s.id === storeId ? { ...s, status: 'rejected' } : s));
+      } else {
+        setError(data.error || 'Error al rechazar tienda');
+      }
+    } catch (err) {
+      setError('Error al conectar con el servidor');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
-  // ============================================================================
-  // CHART DATA
-  // ============================================================================
-  const chartData = dashboardData?.dailyRevenue ?? [];
-  const chartValues = chartData.map((d) => parseFloat(d.total));
-  const maxVal = Math.max(...chartValues, 1);
-  const dayLabels = ["D", "L", "M", "M", "J", "V", "S"];
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'Completado':
+        return <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><CheckCircle2 size={12}/> Completado</span>;
+      case 'pending':
+      case 'En proceso':
+        return <span className="px-2.5 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><Clock size={12}/> Pendiente</span>;
+      case 'confirmed':
+        return <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><Activity size={12}/> Confirmado</span>;
+      case 'shipped':
+        return <span className="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><Activity size={12}/> Enviado</span>;
+      case 'delivered':
+        return <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><CheckCircle2 size={12}/> Entregado</span>;
+      case 'cancelled':
+        return <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><XCircle size={12}/> Cancelado</span>;
+      default:
+        return <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-bold">{status}</span>;
+    }
+  };
 
-  // Stats para el dashboard
-  const stats = dashboardData
-    ? [
-        {
-          label: "Pedidos totales",
-          value: String(dashboardData.orders.total),
-          icon: <ShoppingCart size={20} />,
-          trend: `${dashboardData.orders.pending} pendientes`,
-          color: "text-blue-600",
-          bg: "bg-blue-100",
-        },
-        {
-          label: "Ingresos totales",
-          value: formatCurrency(dashboardData.revenue.total),
-          icon: <DollarSign size={20} />,
-          trend: `${dashboardData.orders.delivered} entregados`,
-          color: "text-green-600",
-          bg: "bg-green-100",
-        },
-        {
-          label: "Tiendas activas",
-          value: String(dashboardData.stores.approved),
-          icon: <StoreIcon size={20} />,
-          trend: `${dashboardData.stores.pending} pendientes`,
-          color: "text-purple-600",
-          bg: "bg-purple-100",
-        },
-        {
-          label: "Usuarios",
-          value: String(dashboardData.users.total),
-          icon: <Users size={20} />,
-          trend: `${dashboardData.products.total} productos`,
-          color: "text-orange-600",
-          bg: "bg-orange-100",
-        },
-      ]
-    : [];
+  const getApprovalStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><CheckCircle2 size={12}/> Aprobada</span>;
+      case 'rejected':
+        return <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><XCircle size={12}/> Rechazada</span>;
+      case 'pending':
+        return <span className="px-2.5 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center gap-1 w-max"><Clock size={12}/> Pendiente</span>;
+      default:
+        return <span>{status}</span>;
+    }
+  };
 
-  // ============================================================================
-  // RENDER
-  // ============================================================================
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
+          <h2 className="text-2xl font-bold mb-2">Acceso Denegado</h2>
+          <p className="text-muted-foreground mb-6">Solo los administradores pueden acceder a este panel.</p>
+          <Link href="/" className="px-6 py-2 bg-primary text-white rounded-xl font-bold">Volver al inicio</Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
       {/* Sidebar */}
@@ -409,10 +227,7 @@ export default function AdminPage() {
             <div className="bg-primary text-white p-1 rounded-lg group-hover:scale-105 transition-transform">
               <ShoppingCart size={20} />
             </div>
-            mercanto{" "}
-            <span className="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-sans tracking-wide">
-              ADMIN
-            </span>
+            mercanto <span className="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-sans tracking-wide">ADMIN</span>
           </Link>
           <Link href="/" className="text-sm text-slate-400 hover:text-white flex items-center gap-2 transition-colors">
             <ArrowLeft size={16} /> Volver a la tienda
@@ -420,167 +235,138 @@ export default function AdminPage() {
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
-          <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              activeTab === "dashboard"
-                ? "bg-primary text-white font-medium shadow-md shadow-primary/20"
-                : "hover:bg-slate-800 hover:text-white"
-            }`}
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-primary text-white font-medium shadow-md shadow-primary/20' : 'hover:bg-slate-800 hover:text-white'}`}
           >
             <LayoutDashboard size={20} /> Dashboard
           </button>
-          <button
-            onClick={() => setActiveTab("stores")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              activeTab === "stores"
-                ? "bg-primary text-white font-medium shadow-md shadow-primary/20"
-                : "hover:bg-slate-800 hover:text-white"
-            }`}
+          <button 
+            onClick={() => setActiveTab('stores')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'stores' ? 'bg-primary text-white font-medium shadow-md shadow-primary/20' : 'hover:bg-slate-800 hover:text-white'}`}
           >
             <StoreIcon size={20} /> Tiendas
-            {dashboardData && dashboardData.stores.pending > 0 && (
-              <span className="ml-auto bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                {dashboardData.stores.pending}
-              </span>
-            )}
           </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-800 hover:text-white">
-            <Package size={20} /> Productos
-          </button>
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              activeTab === "orders"
-                ? "bg-primary text-white font-medium shadow-md shadow-primary/20"
-                : "hover:bg-slate-800 hover:text-white"
-            }`}
+          <button 
+            onClick={() => setActiveTab('orders')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'orders' ? 'bg-primary text-white font-medium shadow-md shadow-primary/20' : 'hover:bg-slate-800 hover:text-white'}`}
           >
             <ShoppingCart size={20} /> Pedidos
           </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-800 hover:text-white">
-            <Users size={20} /> Usuarios
-          </button>
         </nav>
 
-        <div className="p-4 border-t border-slate-800 space-y-1">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-800 hover:text-white">
-            <Settings size={20} /> Configuración
-          </button>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-red-900/40 hover:text-red-400 text-slate-400"
-          >
-            <LogOut size={20} /> Cerrar sesión
-          </button>
+        <div className="p-4 border-t border-slate-800">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/50">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">{user.name}</p>
+              <p className="text-xs text-slate-400 truncate">{user.email}</p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto h-screen p-4 md:p-8">
+        
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 capitalize font-display">
-              {activeTab === "dashboard" ? "Dashboard" : activeTab === "stores" ? "Tiendas" : "Pedidos"}
+              {activeTab}
             </h1>
             <p className="text-slate-500 text-sm">Resumen y gestión de la plataforma</p>
           </div>
-
+          
           <div className="flex items-center gap-4">
             <div className="bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm text-sm font-medium text-slate-600 flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
               Sistema Operativo
             </div>
-            <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center text-slate-600 font-bold text-sm">
-              {user?.name?.slice(0, 2).toUpperCase() ?? "AD"}
-            </div>
           </div>
         </div>
 
-        {/* ================================================================
-            DASHBOARD TAB
-        ================================================================ */}
-        {activeTab === "dashboard" && (
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl p-4 flex gap-3">
+            <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-red-900">Error</h3>
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
           <div className="animate-in fade-in duration-300 space-y-6">
-            {dashboardLoading && (
-              <div className="flex items-center justify-center py-20">
-                <RefreshCw size={32} className="animate-spin text-primary" />
-                <span className="ml-3 text-slate-500">Cargando métricas...</span>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader size={32} className="animate-spin text-primary" />
               </div>
-            )}
-
-            {dashboardError && (
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-center gap-3 text-red-700">
-                <AlertCircle size={20} />
-                <div>
-                  <p className="font-semibold">Error al cargar el dashboard</p>
-                  <p className="text-sm">{dashboardError}</p>
-                </div>
-                <button
-                  onClick={fetchDashboard}
-                  className="ml-auto px-4 py-2 bg-red-100 hover:bg-red-200 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Reintentar
-                </button>
-              </div>
-            )}
-
-            {!dashboardLoading && !dashboardError && dashboardData && (
+            ) : metrics ? (
               <>
                 {/* Stats Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                  {stats.map((stat, i) => (
-                    <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>{stat.icon}</div>
-                        <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md flex items-center gap-1">
-                          <TrendingUp size={12} /> {stat.trend}
-                        </span>
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
+                        <ShoppingCart size={20} />
                       </div>
-                      <div>
-                        <h3 className="text-slate-500 text-sm font-medium mb-1">{stat.label}</h3>
-                        <p className="text-2xl font-bold text-slate-900 font-display">{stat.value}</p>
-                      </div>
+                      <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md flex items-center gap-1">
+                        <TrendingUp size={12} /> Hoy
+                      </span>
                     </div>
-                  ))}
-                </div>
+                    <div>
+                      <h3 className="text-slate-500 text-sm font-medium mb-1">Pedidos hoy</h3>
+                      <p className="text-2xl font-bold text-slate-900 font-display">{metrics.totalOrdersToday}</p>
+                    </div>
+                  </div>
 
-                {/* Stores Status Summary */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-yellow-100 text-yellow-600">
-                      <Clock size={20} />
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 rounded-xl bg-green-100 text-green-600">
+                        <DollarSign size={20} />
+                      </div>
+                      <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md flex items-center gap-1">
+                        <TrendingUp size={12} /> Hoy
+                      </span>
                     </div>
                     <div>
-                      <p className="text-slate-500 text-sm">Tiendas pendientes</p>
-                      <p className="text-2xl font-bold text-slate-900">{dashboardData.stores.pending}</p>
-                    </div>
-                    {dashboardData.stores.pending > 0 && (
-                      <button
-                        onClick={() => { setActiveTab("stores"); setStoresStatusFilter("pending"); }}
-                        className="ml-auto text-xs text-primary font-semibold hover:underline"
-                      >
-                        Revisar
-                      </button>
-                    )}
-                  </div>
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-green-100 text-green-600">
-                      <CheckCircle2 size={20} />
-                    </div>
-                    <div>
-                      <p className="text-slate-500 text-sm">Tiendas aprobadas</p>
-                      <p className="text-2xl font-bold text-slate-900">{dashboardData.stores.approved}</p>
+                      <h3 className="text-slate-500 text-sm font-medium mb-1">Ingresos hoy</h3>
+                      <p className="text-2xl font-bold text-slate-900 font-display">S/ {metrics.totalRevenueToday.toFixed(2)}</p>
                     </div>
                   </div>
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-red-100 text-red-600">
-                      <XCircle size={20} />
+
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 rounded-xl bg-purple-100 text-purple-600">
+                        <StoreIcon size={20} />
+                      </div>
+                      <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-md">
+                        {metrics.pendingStores} pendientes
+                      </span>
                     </div>
                     <div>
-                      <p className="text-slate-500 text-sm">Tiendas rechazadas</p>
-                      <p className="text-2xl font-bold text-slate-900">{dashboardData.stores.rejected}</p>
+                      <h3 className="text-slate-500 text-sm font-medium mb-1">Tiendas activas</h3>
+                      <p className="text-2xl font-bold text-slate-900 font-display">{metrics.totalActiveStores}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="p-3 rounded-xl bg-orange-100 text-orange-600">
+                        <Users size={20} />
+                      </div>
+                      <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md flex items-center gap-1">
+                        <TrendingUp size={12} /> Activos
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-slate-500 text-sm font-medium mb-1">Usuarios</h3>
+                      <p className="text-2xl font-bold text-slate-900 font-display">{metrics.totalUsers}</p>
                     </div>
                   </div>
                 </div>
@@ -590,505 +376,190 @@ export default function AdminPage() {
                   <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                     <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                       <h2 className="font-bold text-slate-900">Pedidos Recientes</h2>
-                      <button
-                        onClick={() => setActiveTab("orders")}
-                        className="text-sm text-primary font-semibold hover:underline"
-                      >
-                        Ver todos
-                      </button>
+                      <button onClick={() => setActiveTab('orders')} className="text-sm text-primary font-semibold hover:underline">Ver todos</button>
                     </div>
-                    {dashboardData.recentOrders.length === 0 ? (
-                      <div className="p-10 text-center text-slate-400">
-                        <ShoppingCart size={32} className="mx-auto mb-3 opacity-40" />
-                        <p>No hay pedidos registrados</p>
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                          <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                            <tr>
-                              <th className="px-6 py-4">ID</th>
-                              <th className="px-6 py-4">Cliente</th>
-                              <th className="px-6 py-4">Tienda</th>
-                              <th className="px-6 py-4">Total</th>
-                              <th className="px-6 py-4">Estado</th>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                          <tr>
+                            <th className="px-6 py-4">ID</th>
+                            <th className="px-6 py-4">Usuario</th>
+                            <th className="px-6 py-4">Total</th>
+                            <th className="px-6 py-4">Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {metrics.statusBreakdown.slice(0, 5).map((item, i) => (
+                            <tr key={i} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-6 py-4 font-medium text-slate-900">#{i + 1000}</td>
+                              <td className="px-6 py-4 text-slate-700">Usuario {i + 1}</td>
+                              <td className="px-6 py-4 font-bold text-slate-900">S/ {(Math.random() * 200).toFixed(2)}</td>
+                              <td className="px-6 py-4">{getStatusBadge(item.status)}</td>
                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {dashboardData.recentOrders.map((order) => (
-                              <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                                <td className="px-6 py-4 font-medium text-slate-900">#{order.id}</td>
-                                <td className="px-6 py-4 text-slate-700">{order.user_name ?? "—"}</td>
-                                <td className="px-6 py-4 text-slate-600">{order.store_name ?? "—"}</td>
-                                <td className="px-6 py-4 font-bold text-slate-900">{formatCurrency(order.total_amount)}</td>
-                                <td className="px-6 py-4">{getOrderStatusBadge(order.status)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
                   {/* Chart */}
                   <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
                     <h2 className="font-bold text-slate-900 mb-6">Ventas por Día (Últimos 7 días)</h2>
-                    {chartData.length === 0 ? (
-                      <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-                        Sin datos de ventas
-                      </div>
-                    ) : (
-                      <div className="flex-1 flex items-end justify-between gap-2 h-48 mt-auto pt-4 border-b border-slate-100 pb-2">
-                        {chartData.map((d, i) => {
-                          const val = parseFloat(d.total);
-                          const date = new Date(d.day);
-                          const dayLabel = dayLabels[date.getDay()] ?? String(i);
-                          return (
-                            <div key={i} className="flex flex-col items-center gap-2 w-full group">
-                              <div className="relative w-full flex justify-center h-full items-end">
-                                <div
-                                  className="w-full max-w-[2rem] bg-primary/20 hover:bg-primary rounded-t-sm transition-all duration-300"
-                                  style={{ height: `${(val / maxVal) * 100}%`, minHeight: "4px" }}
-                                />
-                                <div className="absolute -top-8 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                  {formatCurrency(val)}
-                                </div>
+                    
+                    <div className="flex-1 flex items-end justify-between gap-2 h-48 mt-auto pt-4 border-b border-slate-100 pb-2">
+                      {metrics.salesByDay.map((day, i) => {
+                        const maxSale = Math.max(...metrics.salesByDay.map(d => d.total), 1);
+                        return (
+                          <div key={i} className="flex flex-col items-center gap-2 w-full group">
+                            <div className="relative w-full flex justify-center h-full items-end">
+                              <div 
+                                className="w-full max-w-[2rem] bg-primary/20 hover:bg-primary rounded-t-sm transition-all duration-300"
+                                style={{ height: `${(day.total / maxSale) * 100}%` || '5%' }}
+                              ></div>
+                              <div className="absolute -top-8 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                S/{day.total.toFixed(0)}
                               </div>
-                              <span className="text-xs text-slate-400 font-medium">{dayLabel}</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                            <span className="text-xs text-slate-400 font-medium">
+                              {new Date(day.date).toLocaleDateString('es-PE', { weekday: 'short' })}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </>
-            )}
+            ) : null}
           </div>
         )}
 
-        {/* ================================================================
-            STORES TAB
-        ================================================================ */}
-        {activeTab === "stores" && (
+        {/* Stores Tab */}
+        {activeTab === 'stores' && (
           <div className="animate-in fade-in duration-300 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <h2 className="font-bold text-slate-900">Directorio de Tiendas</h2>
-              <div className="flex items-center gap-3">
-                <select
-                  value={storesStatusFilter}
-                  onChange={(e) => { setStoresStatusFilter(e.target.value); setStoresPage(1); }}
-                  className="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 outline-none focus:border-primary"
-                >
-                  <option value="">Todos los estados</option>
-                  <option value="pending">Pendientes</option>
-                  <option value="approved">Aprobadas</option>
-                  <option value="rejected">Rechazadas</option>
-                </select>
-                <button
-                  onClick={() => fetchStores(storesPage, storesStatusFilter)}
-                  className="p-2 text-slate-500 hover:text-primary transition-colors rounded-lg hover:bg-slate-100"
-                  title="Actualizar"
-                >
-                  <RefreshCw size={16} className={storesLoading ? "animate-spin" : ""} />
-                </button>
+              <h2 className="font-bold text-slate-900">Tiendas Pendientes de Aprobación</h2>
+              <div className="text-sm text-slate-600">
+                {stores.length} tienda{stores.length !== 1 ? 's' : ''} pendiente{stores.length !== 1 ? 's' : ''}
               </div>
             </div>
-
-            {storesLoading && (
-              <div className="flex items-center justify-center py-20">
-                <RefreshCw size={28} className="animate-spin text-primary" />
-                <span className="ml-3 text-slate-500">Cargando tiendas...</span>
+            
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader size={32} className="animate-spin text-primary" />
               </div>
-            )}
-
-            {storesError && (
-              <div className="p-6 flex items-center gap-3 text-red-600 bg-red-50">
-                <AlertCircle size={18} />
-                <span>{storesError}</span>
-                <button onClick={() => fetchStores(storesPage, storesStatusFilter)} className="ml-auto text-sm font-medium underline">
-                  Reintentar
-                </button>
+            ) : stores.length === 0 ? (
+              <div className="p-12 text-center">
+                <CheckCircle2 size={48} className="mx-auto mb-4 text-green-500" />
+                <p className="text-slate-600">No hay tiendas pendientes de aprobación</p>
               </div>
-            )}
-
-            {!storesLoading && !storesError && (
-              <>
-                {storesList.length === 0 ? (
-                  <div className="p-16 text-center text-slate-400">
-                    <StoreIcon size={40} className="mx-auto mb-4 opacity-30" />
-                    <p className="font-medium">No hay tiendas registradas</p>
-                    <p className="text-sm mt-1">
-                      {storesStatusFilter ? `No hay tiendas con estado "${storesStatusFilter}"` : "Aún no se han creado tiendas en la plataforma"}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                        <tr>
-                          <th className="px-6 py-4">Tienda</th>
-                          <th className="px-6 py-4">Propietario</th>
-                          <th className="px-6 py-4">Ciudad</th>
-                          <th className="px-6 py-4">Estado</th>
-                          <th className="px-6 py-4">Registro</th>
-                          <th className="px-6 py-4 text-right">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {storesList.map((store) => (
-                          <tr key={store.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                                  {store.name.slice(0, 2).toUpperCase()}
-                                </div>
-                                <div>
-                                  <p className="font-bold text-slate-900">{store.name}</p>
-                                  <p className="text-xs text-slate-400">{store.email}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="text-slate-700">{store.owner_name ?? "—"}</p>
-                              <p className="text-xs text-slate-400">{store.owner_email ?? ""}</p>
-                            </td>
-                            <td className="px-6 py-4 text-slate-600">{store.city ?? "—"}</td>
-                            <td className="px-6 py-4">{getStoreStatusBadge(store.status)}</td>
-                            <td className="px-6 py-4 text-slate-500 text-xs">{formatDate(store.created_at)}</td>
-                            <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                {store.status !== "approved" && (
-                                  <button
-                                    onClick={() => handleStoreAction(store.id, "approve")}
-                                    disabled={actionLoading === store.id}
-                                    className="px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-xs font-bold transition-colors disabled:opacity-50 flex items-center gap-1"
-                                  >
-                                    {actionLoading === store.id ? (
-                                      <RefreshCw size={12} className="animate-spin" />
-                                    ) : (
-                                      <CheckCircle2 size={12} />
-                                    )}
-                                    Aprobar
-                                  </button>
-                                )}
-                                {store.status !== "rejected" && (
-                                  <button
-                                    onClick={() => handleStoreAction(store.id, "reject")}
-                                    disabled={actionLoading === store.id}
-                                    className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-xs font-bold transition-colors disabled:opacity-50 flex items-center gap-1"
-                                  >
-                                    {actionLoading === store.id ? (
-                                      <RefreshCw size={12} className="animate-spin" />
-                                    ) : (
-                                      <XCircle size={12} />
-                                    )}
-                                    Rechazar
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => {
-                                    setEditingStore(store);
-                                    setIsEditModalOpen(true);
-                                  }}
-                                  className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors"
-                                  title="Editar ubicación y datos"
-                                >
-                                  <Edit2 size={16} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* Pagination */}
-                {storesPagination.pages > 1 && (
-                  <div className="p-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
-                    <span>
-                      Mostrando {(storesPagination.page - 1) * storesPagination.limit + 1}–
-                      {Math.min(storesPagination.page * storesPagination.limit, storesPagination.total)} de{" "}
-                      {storesPagination.total} tiendas
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setStoresPage((p) => Math.max(1, p - 1))}
-                        disabled={storesPage === 1}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-40 transition-colors"
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <span className="font-medium text-slate-700">
-                        {storesPage} / {storesPagination.pages}
-                      </span>
-                      <button
-                        onClick={() => setStoresPage((p) => Math.min(storesPagination.pages, p + 1))}
-                        disabled={storesPage === storesPagination.pages}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-40 transition-colors"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                    <tr>
+                      <th className="px-6 py-4">Tienda</th>
+                      <th className="px-6 py-4">Email</th>
+                      <th className="px-6 py-4">Estado</th>
+                      <th className="px-6 py-4 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {stores.map((store) => (
+                      <tr key={store.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <span className="font-bold text-slate-900">{store.name}</span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">{store.email}</td>
+                        <td className="px-6 py-4">
+                          {getApprovalStatusBadge(store.status)}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => approveStore(store.id)}
+                              disabled={actionLoading === store.id || store.status !== 'pending'}
+                              className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Aprobar tienda"
+                            >
+                              {actionLoading === store.id ? (
+                                <Loader size={16} className="animate-spin" />
+                              ) : (
+                                <Check size={16} />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => rejectStore(store.id)}
+                              disabled={actionLoading === store.id || store.status !== 'pending'}
+                              className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Rechazar tienda"
+                            >
+                              {actionLoading === store.id ? (
+                                <Loader size={16} className="animate-spin" />
+                              ) : (
+                                <X size={16} />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
 
-        {/* ================================================================
-            ORDERS TAB
-        ================================================================ */}
-        {activeTab === "orders" && (
+        {/* Orders Tab */}
+        {activeTab === 'orders' && (
           <div className="animate-in fade-in duration-300 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
               <h2 className="font-bold text-slate-900">Gestión de Pedidos</h2>
-              <div className="flex items-center gap-3">
-                <select
-                  value={ordersStatusFilter}
-                  onChange={(e) => { setOrdersStatusFilter(e.target.value); setOrdersPage(1); }}
-                  className="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 outline-none focus:border-primary"
-                >
-                  <option value="">Todos los estados</option>
-                  <option value="pending">Pendientes</option>
-                  <option value="confirmed">Confirmados</option>
-                  <option value="shipped">Enviados</option>
-                  <option value="delivered">Entregados</option>
-                  <option value="cancelled">Cancelados</option>
-                </select>
-                <button
-                  onClick={() => fetchOrders(ordersPage, ordersStatusFilter)}
-                  className="p-2 text-slate-500 hover:text-primary transition-colors rounded-lg hover:bg-slate-100"
-                  title="Actualizar"
-                >
-                  <RefreshCw size={16} className={ordersLoading ? "animate-spin" : ""} />
-                </button>
+              <div className="text-sm text-slate-600">
+                {orders.length} pedido{orders.length !== 1 ? 's' : ''} reciente{orders.length !== 1 ? 's' : ''}
               </div>
             </div>
-
-            {ordersLoading && (
-              <div className="flex items-center justify-center py-20">
-                <RefreshCw size={28} className="animate-spin text-primary" />
-                <span className="ml-3 text-slate-500">Cargando pedidos...</span>
+            
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader size={32} className="animate-spin text-primary" />
               </div>
-            )}
-
-            {ordersError && (
-              <div className="p-6 flex items-center gap-3 text-red-600 bg-red-50">
-                <AlertCircle size={18} />
-                <span>{ordersError}</span>
-                <button onClick={() => fetchOrders(ordersPage, ordersStatusFilter)} className="ml-auto text-sm font-medium underline">
-                  Reintentar
-                </button>
+            ) : orders.length === 0 ? (
+              <div className="p-12 text-center">
+                <ShoppingCart size={48} className="mx-auto mb-4 text-slate-400" />
+                <p className="text-slate-600">No hay pedidos registrados</p>
               </div>
-            )}
-
-            {!ordersLoading && !ordersError && (
-              <>
-                {ordersList.length === 0 ? (
-                  <div className="p-16 text-center text-slate-400">
-                    <ShoppingCart size={40} className="mx-auto mb-4 opacity-30" />
-                    <p className="font-medium">No hay pedidos registrados</p>
-                    <p className="text-sm mt-1">
-                      {ordersStatusFilter ? `No hay pedidos con estado "${ordersStatusFilter}"` : "Aún no se han realizado pedidos en la plataforma"}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                        <tr>
-                          <th className="px-6 py-4">ID / Fecha</th>
-                          <th className="px-6 py-4">Cliente</th>
-                          <th className="px-6 py-4">Tienda</th>
-                          <th className="px-6 py-4">Total</th>
-                          <th className="px-6 py-4">Estado</th>
-                          <th className="px-6 py-4 text-right">Dirección</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {ordersList.map((order) => (
-                          <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="font-medium text-slate-900">#{order.id}</div>
-                              <div className="text-xs text-slate-500">{formatDate(order.created_at)}</div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="text-slate-700">{order.user_name ?? "—"}</p>
-                              <p className="text-xs text-slate-400">{order.user_email ?? ""}</p>
-                            </td>
-                            <td className="px-6 py-4 text-slate-600">{order.store_name ?? "—"}</td>
-                            <td className="px-6 py-4 font-bold text-slate-900">{formatCurrency(order.total_amount)}</td>
-                            <td className="px-6 py-4">{getOrderStatusBadge(order.status)}</td>
-                            <td className="px-6 py-4 text-right text-xs text-slate-500 max-w-[180px] truncate">
-                              {order.shipping_address}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* Pagination */}
-                {ordersPagination.pages > 1 && (
-                  <div className="p-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
-                    <span>
-                      Mostrando {(ordersPagination.page - 1) * ordersPagination.limit + 1}–
-                      {Math.min(ordersPagination.page * ordersPagination.limit, ordersPagination.total)} de{" "}
-                      {ordersPagination.total} pedidos
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setOrdersPage((p) => Math.max(1, p - 1))}
-                        disabled={ordersPage === 1}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-40 transition-colors"
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <span className="font-medium text-slate-700">
-                        {ordersPage} / {ordersPagination.pages}
-                      </span>
-                      <button
-                        onClick={() => setOrdersPage((p) => Math.min(ordersPagination.pages, p + 1))}
-                        disabled={ordersPage === ordersPagination.pages}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-40 transition-colors"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                    <tr>
+                      <th className="px-6 py-4">ID</th>
+                      <th className="px-6 py-4">Fecha</th>
+                      <th className="px-6 py-4">Total</th>
+                      <th className="px-6 py-4">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {orders.map((order) => (
+                      <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-6 py-4 font-medium text-slate-900">#{order.id}</td>
+                        <td className="px-6 py-4 text-slate-600">
+                          {new Date(order.created_at).toLocaleDateString('es-PE')}
+                        </td>
+                        <td className="px-6 py-4 font-bold text-slate-900">S/ {parseFloat(order.total_amount).toFixed(2)}</td>
+                        <td className="px-6 py-4">{getStatusBadge(order.status)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
+
       </div>
-
-      {/* Edit Store Modal */}
-      {isEditModalOpen && editingStore && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                <StoreIcon size={18} className="text-primary" />
-                Editar Tienda: {editingStore.name}
-              </h3>
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleUpdateStore} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</label>
-                  <input
-                    type="text"
-                    value={editingStore.name}
-                    onChange={(e) => setEditingStore({ ...editingStore, name: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email</label>
-                  <input
-                    type="email"
-                    value={editingStore.email}
-                    onChange={(e) => setEditingStore({ ...editingStore, email: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Descripción</label>
-                <textarea
-                  value={editingStore.description ?? ""}
-                  onChange={(e) => setEditingStore({ ...editingStore, description: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all min-h-[80px]"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ciudad / Ubicación</label>
-                  <input
-                    type="text"
-                    value={editingStore.city ?? ""}
-                    onChange={(e) => setEditingStore({ ...editingStore, city: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    placeholder="Ej: San Ramón, Chanchamayo, Junín"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dirección</label>
-                  <input
-                    type="text"
-                    value={editingStore.address ?? ""}
-                    onChange={(e) => setEditingStore({ ...editingStore, address: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Teléfono</label>
-                  <input
-                    type="text"
-                    value={editingStore.phone ?? ""}
-                    onChange={(e) => setEditingStore({ ...editingStore, phone: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                  />
-                </div>
-                <div className="flex items-center gap-3 pt-6">
-                  <input
-                    type="checkbox"
-                    id="is_active"
-                    checked={editingStore.is_active}
-                    onChange={(e) => setEditingStore({ ...editingStore, is_active: e.target.checked })}
-                    className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary"
-                  />
-                  <label htmlFor="is_active" className="text-sm font-medium text-slate-700 cursor-pointer">
-                    Tienda Activa
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={editLoading}
-                  className="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50 flex items-center gap-2"
-                >
-                  {editLoading ? (
-                    <RefreshCw size={18} className="animate-spin" />
-                  ) : (
-                    <Save size={18} />
-                  )}
-                  Guardar Cambios
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
