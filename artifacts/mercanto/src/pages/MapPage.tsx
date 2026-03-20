@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useListStores } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { filterStores } from "@/lib/categoryUtils";
 
 // Leaflet imports
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
@@ -23,24 +24,27 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-// Create custom colored markers based on category
-const createCustomIcon = (colorClass: string, icon: string) => {
-  let bgColor = "#e11d48"; // default primary
-  if (colorClass.includes("orange")) bgColor = "#f97316";
-  if (colorClass.includes("green")) bgColor = "#22c55e";
-  if (colorClass.includes("blue")) bgColor = "#3b82f6";
-  if (colorClass.includes("pink")) bgColor = "#ec4899";
-  if (colorClass.includes("amber")) bgColor = "#f59e0b";
-  if (colorClass.includes("slate")) bgColor = "#64748b";
-  if (colorClass.includes("teal")) bgColor = "#14b8a6";
-
-  return L.divIcon({
-    className: "custom-div-icon",
-    html: `<div style="background-color: ${bgColor}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); border: 2px solid white;">${icon}</div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -18]
-  });
+// Create custom colored markers with store logos
+const createCustomIcon = (logoUrl: string | null) => {
+  if (logoUrl) {
+    // Create icon with store logo
+    return L.divIcon({
+      className: "custom-div-icon",
+      html: `<div style="width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: white; border: 3px solid #e11d48; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2); overflow: hidden;"><img src="${logoUrl}" alt="store" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div>`,
+      iconSize: [44, 44],
+      iconAnchor: [22, 22],
+      popupAnchor: [0, -22]
+    });
+  } else {
+    // Fallback to colored icon
+    return L.divIcon({
+      className: "custom-div-icon",
+      html: `<div style="background-color: #e11d48; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2); border: 3px solid white;">🏪</div>`,
+      iconSize: [44, 44],
+      iconAnchor: [22, 22],
+      popupAnchor: [0, -22]
+    });
+  }
 };
 
 function MapUpdater({ center }: { center: [number, number] }) {
@@ -55,9 +59,9 @@ export default function MapPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
 
-  // Lima, Peru coordinates
-  const defaultCenter: [number, number] = [-12.0646, -77.0465];
-  const [mapCenter, setMapCenter] = useState<[number, number]>(defaultCenter);
+  // Coordenadas de San Ramón, Chanchamayo, Junín
+  const SAN_RAMON_CENTER: [number, number] = [-11.1245, -75.3582];
+  const [mapCenter, setMapCenter] = useState<[number, number]>(SAN_RAMON_CENTER);
 
   const { data, isLoading, error, refetch } = useListStores({
     status: 'approved',
@@ -67,34 +71,21 @@ export default function MapPage() {
 
   const stores = data?.data || [];
 
+  // Función para generar coordenadas deterministas en San Ramón basadas en el ID
+  const getStoreCoordinates = (id: number): [number, number] => {
+    // Generar un desplazamiento pequeño basado en el ID para que no todas estén en el mismo punto
+    const latOffset = (Math.sin(id * 123.456) * 0.005);
+    const lngOffset = (Math.cos(id * 456.789) * 0.005);
+    return [SAN_RAMON_CENTER[0] + latOffset, SAN_RAMON_CENTER[1] + lngOffset];
+  };
+
   const filteredStores = useMemo(() => {
-    return stores.filter(store => {
-      // Mapeo simple de categorías para el mock visual
-      const categoryMap: Record<string, string> = {
-        'restaurants': 'Restaurante',
-        'fruits': 'Frutas y Verduras',
-        'stores': 'Minimarket',
-        'clothes': 'Ropa',
-        'home': 'Hogar',
-        'tech': 'Tecnología',
-        'pharmacy': 'Salud'
-      };
-      
-      const matchesCategory = activeCategory === "all" || 
-                             (store.description || "").includes(categoryMap[activeCategory] || "");
-      
-      const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            (store.description || "").toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [stores, activeCategory, searchQuery]);
+    return filterStores(stores, searchQuery, activeCategory);
+  }, [stores, searchQuery, activeCategory]);
 
   const handleStoreSelect = (store: any) => {
     setSelectedStoreId(store.id);
-    // En un escenario real, la API devolvería lat/lng. Aquí usamos valores por defecto o simulados.
-    const lat = -12.0646 + (Math.random() - 0.5) * 0.05;
-    const lng = -77.0465 + (Math.random() - 0.5) * 0.05;
-    setMapCenter([lat, lng]);
+    setMapCenter(getStoreCoordinates(store.id));
   };
 
   return (
@@ -108,7 +99,7 @@ export default function MapPage() {
             </div>
             <input
               type="text"
-              placeholder="Buscar tiendas en el mapa..."
+              placeholder="Buscar tiendas en San Ramón..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-muted/50 border border-transparent focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 rounded-xl text-sm transition-all outline-none"
@@ -140,7 +131,7 @@ export default function MapPage() {
           <div className="p-4 border-b border-border bg-muted/20">
             <h2 className="font-bold text-lg flex items-center gap-2">
               <MapPin size={18} className="text-primary" /> 
-              {isLoading ? 'Cargando...' : `${filteredStores.length} Tiendas encontradas`}
+              {isLoading ? 'Cargando...' : `${filteredStores.length} Tiendas en San Ramón`}
             </h2>
           </div>
           
@@ -176,7 +167,7 @@ export default function MapPage() {
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 bg-gradient-to-br from-slate-700 to-slate-900 overflow-hidden`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 overflow-hidden border-2 border-primary/20`}>
                       {store.logo_url ? (
                         <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover" />
                       ) : (
@@ -185,7 +176,7 @@ export default function MapPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-foreground truncate">{store.name}</h3>
-                      <p className="text-xs text-muted-foreground mb-2">Tienda</p>
+                      <p className="text-xs text-muted-foreground mb-2">San Ramón, Chanchamayo</p>
                       <div className="flex justify-between items-center">
                         <span className="text-xs bg-muted px-2 py-0.5 rounded-md font-medium">Abierto</span>
                         <button 
@@ -209,8 +200,8 @@ export default function MapPage() {
         {/* Map Container */}
         <div className="flex-1 h-full z-0 relative">
           <MapContainer 
-            center={defaultCenter} 
-            zoom={14} 
+            center={SAN_RAMON_CENTER} 
+            zoom={15} 
             className="w-full h-full"
             zoomControl={false}
           >
@@ -221,16 +212,13 @@ export default function MapPage() {
             />
             
             {filteredStores.map(store => {
-              // Simular coordenadas si no existen
-              const lat = -12.0646 + (Math.random() - 0.5) * 0.05;
-              const lng = -77.0465 + (Math.random() - 0.5) * 0.05;
-              
-              const customIcon = createCustomIcon("bg-slate-700", '🏪');
+              const position = getStoreCoordinates(store.id);
+              const customIcon = createCustomIcon(store.logo_url);
               
               return (
                 <Marker 
                   key={store.id} 
-                  position={[lat, lng]}
+                  position={position}
                   icon={customIcon}
                   eventHandlers={{
                     click: () => {
@@ -240,16 +228,15 @@ export default function MapPage() {
                 >
                   <Popup className="rounded-xl overflow-hidden shadow-xl border-none">
                     <div className="p-1 -m-1">
-                      <div className={`h-16 -mx-4 -mt-4 bg-gradient-to-r from-slate-700 to-slate-900 mb-3 flex items-center justify-center relative overflow-hidden`}>
-                        {store.logo_url && <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover opacity-50" />}
-                        <div className="absolute -bottom-4 bg-white rounded-full p-1 shadow-sm">
-                           <div className="w-8 h-8 flex items-center justify-center text-lg">
-                             {store.logo_url ? '' : '🏪'}
-                           </div>
-                        </div>
+                      <div className={`h-20 -mx-4 -mt-4 bg-gradient-to-r from-slate-700 to-slate-900 mb-3 flex items-center justify-center relative overflow-hidden`}>
+                        {store.logo_url ? (
+                          <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-4xl">🏪</div>
+                        )}
                       </div>
                       <h3 className="font-bold text-base text-center mt-3 mb-1">{store.name}</h3>
-                      <p className="text-xs text-muted-foreground text-center mb-3">Tienda</p>
+                      <p className="text-xs text-muted-foreground text-center mb-3">San Ramón</p>
                       <button 
                         onClick={() => setLocation(`/tienda/${store.id}`)}
                         className="w-full py-1.5 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors"

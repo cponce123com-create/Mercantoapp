@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, MapPin, ShoppingBag, ArrowLeft, Filter, AlertCircle } from "lucide-react";
+import { Search, MapPin, ShoppingBag, ArrowLeft, Filter, AlertCircle, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { CATEGORIES } from "@/data/mock";
 import { useListStores } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { filterStores } from "@/lib/categoryUtils";
 
 export default function Stores() {
   const [, setLocation] = useLocation();
@@ -12,11 +14,12 @@ export default function Stores() {
   const searchParams = new URLSearchParams(window.location.search);
   const urlCategory = searchParams.get('categoria') || "all";
   const [selectedCategory, setSelectedCategory] = useState(urlCategory);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const { data, isLoading, error, refetch } = useListStores({
     status: 'approved',
     is_active: true,
-    limit: 50
+    limit: 20
   });
 
   useEffect(() => {
@@ -28,33 +31,13 @@ export default function Stores() {
   const stores = data?.data || [];
 
   const filteredStores = useMemo(() => {
-    return stores.filter(store => {
-      const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           (store.description || "").toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // Mapeo simple de categorías para el mock visual
-      const categoryMap: Record<string, string> = {
-        'restaurants': 'Restaurante',
-        'fruits': 'Frutas y Verduras',
-        'stores': 'Minimarket',
-        'clothes': 'Ropa',
-        'home': 'Hogar',
-        'tech': 'Tecnología',
-        'pharmacy': 'Salud'
-      };
-      
-      const matchesCategory = selectedCategory === "all" || 
-                             (store.description || "").includes(categoryMap[selectedCategory] || "");
-      
-      return matchesSearch && matchesCategory;
-    });
+    return filterStores(stores, searchQuery, selectedCategory);
   }, [stores, searchQuery, selectedCategory]);
 
   return (
     <div className="min-h-screen bg-background pt-8 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Header & Breadcrumb */}
         <div className="mb-8">
           <button 
             onClick={() => setLocation('/')}
@@ -64,7 +47,6 @@ export default function Stores() {
           </button>
           <h1 className="text-4xl font-display font-extrabold text-foreground mb-4">Todas las tiendas</h1>
           
-          {/* Search Bar */}
           <div className="relative max-w-2xl">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <Search size={20} className="text-muted-foreground" />
@@ -80,19 +62,56 @@ export default function Stores() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar / Filters */}
-          <div className="w-full lg:w-64 flex-shrink-0">
+          {/* Mobile Filter Toggle */}
+          <div className="lg:hidden mb-4">
+            <button 
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className="w-full flex items-center justify-between px-6 py-4 bg-white border border-border rounded-2xl shadow-sm font-bold text-foreground"
+            >
+              <div className="flex items-center gap-2">
+                <Filter size={20} className="text-primary" />
+                <span>{selectedCategory === 'all' ? 'Todas las categorías' : CATEGORIES.find(c => c.id === selectedCategory)?.name}</span>
+              </div>
+              <ChevronDown size={20} className={cn("transition-transform duration-300", isFilterOpen && "rotate-180")} />
+            </button>
+            
+            <div className={cn(
+              "overflow-hidden transition-all duration-300 ease-in-out",
+              isFilterOpen ? "max-h-[500px] mt-2 opacity-100" : "max-h-0 opacity-0"
+            )}>
+              <div className="bg-white border border-border rounded-2xl p-2 grid grid-cols-2 gap-2 shadow-lg">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); }}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-3 rounded-xl transition-all text-sm font-bold",
+                      selectedCategory === cat.id 
+                        ? 'bg-primary text-white' 
+                        : 'bg-muted/30 text-muted-foreground'
+                    )}
+                  >
+                    <span>{cat.icon}</span>
+                    <span className="truncate">{cat.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Sidebar / Filters */}
+          <div className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white rounded-3xl border border-border p-6 shadow-sm sticky top-28">
               <div className="flex items-center gap-2 mb-6 text-foreground font-bold text-lg">
                 <Filter size={20} /> Filtrar por categoría
               </div>
               
-              <div className="flex lg:flex-col gap-2 overflow-x-auto hide-scrollbar pb-2 lg:pb-0">
+              <div className="flex flex-col gap-2">
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all whitespace-nowrap lg:whitespace-normal font-medium ${
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
                       selectedCategory === cat.id 
                         ? 'bg-primary text-white shadow-md' 
                         : 'hover:bg-muted text-muted-foreground hover:text-foreground'
@@ -106,7 +125,6 @@ export default function Stores() {
             </div>
           </div>
 
-          {/* Grid */}
           <div className="flex-1">
             {isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -130,12 +148,12 @@ export default function Stores() {
                 <p className="text-muted-foreground text-lg max-w-md">
                   No hay resultados para "{searchQuery}" en la categoría seleccionada. Intenta buscar con otros términos.
                 </p>
-                <button 
-                  onClick={() => { setSearchQuery(""); setSelectedCategory("all"); }}
-                  className="mt-8 px-6 py-3 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl font-bold transition-colors"
-                >
-                  Limpiar filtros
-                </button>
+            <button 
+              onClick={() => { setSearchQuery(""); setSelectedCategory("all"); window.history.replaceState({}, '', '/tiendas'); }}
+              className="mt-8 px-6 py-3 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl font-bold transition-colors"
+            >
+              Limpiar filtros
+            </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -145,7 +163,6 @@ export default function Stores() {
                     onClick={() => setLocation(`/tienda/${store.id}`)}
                     className="group flex-shrink-0 w-full bg-white rounded-3xl overflow-hidden border border-border/60 shadow-md shadow-black/5 hover:shadow-xl hover:border-primary/30 transition-all duration-300 text-left focus:outline-none focus:ring-4 focus:ring-primary/20"
                   >
-                    {/* Visual Header */}
                     <div className={`h-36 w-full bg-gradient-to-r from-slate-700 to-slate-900 relative flex items-center justify-center overflow-hidden`}>
                       {store.logo_url ? (
                         <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700" />
@@ -155,9 +172,7 @@ export default function Stores() {
                       <div className="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
                     </div>
                     
-                    {/* Content */}
                     <div className="p-5 relative">
-                      {/* Badge overlaps header */}
                       <div className="absolute -top-4 right-4 bg-white px-3 py-1 rounded-full shadow-md text-xs font-bold text-primary flex items-center gap-1 border border-border/50">
                         <ShoppingBag size={12} />
                         Recojo en tienda

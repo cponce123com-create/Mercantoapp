@@ -9,6 +9,12 @@ export type BodyType<T> = T;
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
+// URL base del backend — usa variable de entorno en producción
+const API_BASE =
+  typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_URL
+    ? (import.meta as any).env.VITE_API_URL
+    : "https://mercanto-api.onrender.com";
+
 function isRequest(input: RequestInfo | URL): input is Request {
   return typeof Request !== "undefined" && input instanceof Request;
 }
@@ -19,8 +25,6 @@ function resolveMethod(input: RequestInfo | URL, explicitMethod?: string): strin
   return "GET";
 }
 
-// Use loose check for URL — some runtimes (e.g. React Native) polyfill URL
-// differently, so `instanceof URL` can fail.
 function isUrl(input: RequestInfo | URL): input is URL {
   return typeof URL !== "undefined" && input instanceof URL;
 }
@@ -31,16 +35,21 @@ function resolveUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
+function resolveInput(input: RequestInfo | URL): RequestInfo | URL {
+  if (typeof input === "string" && input.startsWith("/api")) {
+    return `${API_BASE}${input}`;
+  }
+  return input;
+}
+
 function mergeHeaders(...sources: Array<HeadersInit | undefined>): Headers {
   const headers = new Headers();
-
   for (const source of sources) {
     if (!source) continue;
     new Headers(source).forEach((value, key) => {
       headers.set(key, value);
     });
   }
-
   return headers;
 }
 
@@ -64,16 +73,9 @@ function isTextMediaType(mediaType: string | null): boolean {
   );
 }
 
-// Use strict equality: in browsers, `response.body` is `null` when the
-// response genuinely has no content.  In React Native, `response.body` is
-// always `undefined` because the ReadableStream API is not implemented —
-// even when the response carries a full payload readable via `.text()` or
-// `.json()`.  Loose equality (`== null`) matches both `null` and `undefined`,
-// which causes every React Native response to be treated as empty.
 function hasNoBody(response: Response, method: string): boolean {
   if (method === "HEAD") return true;
   if (NO_BODY_STATUS.has(response.status)) return true;
-  if (response.headers.get("content-length") === "0") return true;
   if (response.body === null) return true;
   return false;
 }
@@ -83,106 +85,30 @@ function stripBom(text: string): string {
 }
 
 function looksLikeJson(text: string): boolean {
-  const trimmed = text.trimStart();
-  return trimmed.startsWith("{") || trimmed.startsWith("[");
+  const t = text.trim();
+  return t.startsWith("{") || t.startsWith("[");
 }
 
-function getStringField(value: unknown, key: string): string | undefined {
-  if (!value || typeof value !== "object") return undefined;
-
-  const candidate = (value as Record<string, unknown>)[key];
-  if (typeof candidate !== "string") return undefined;
-
-  const trimmed = candidate.trim();
-  return trimmed === "" ? undefined : trimmed;
-}
-
-function truncate(text: string, maxLength = 300): string {
-  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
-}
-
-function buildErrorMessage(response: Response, data: unknown): string {
-  const prefix = `HTTP ${response.status} ${response.statusText}`;
-
-  if (typeof data === "string") {
-    const text = data.trim();
-    return text ? `${prefix}: ${truncate(text)}` : prefix;
-  }
-
-  const title = getStringField(data, "title");
-  const detail = getStringField(data, "detail");
-  const message =
-    getStringField(data, "message") ??
-    getStringField(data, "error_description") ??
-    getStringField(data, "error");
-
-  if (title && detail) return `${prefix}: ${title} — ${detail}`;
-  if (detail) return `${prefix}: ${detail}`;
-  if (message) return `${prefix}: ${message}`;
-  if (title) return `${prefix}: ${title}`;
-
-  return prefix;
-}
-
-export class ApiError<T = unknown> extends Error {
-  readonly name = "ApiError";
-  readonly status: number;
-  readonly statusText: string;
-  readonly data: T | null;
-  readonly headers: Headers;
-  readonly response: Response;
-  readonly method: string;
-  readonly url: string;
-
+class ApiError<T = unknown> extends Error {
   constructor(
-    response: Response,
-    data: T | null,
-    requestInfo: { method: string; url: string },
+    public response: Response,
+    public data: T,
+    public requestInfo: { method: string; url: string },
   ) {
-    super(buildErrorMessage(response, data));
-    Object.setPrototypeOf(this, new.target.prototype);
-
-    this.status = response.status;
-    this.statusText = response.statusText;
-    this.data = data;
-    this.headers = response.headers;
-    this.response = response;
-    this.method = requestInfo.method;
-    this.url = response.url || requestInfo.url;
+    super(`API Error ${response.status}: ${response.url}`);
+    this.name = "ApiError";
   }
 }
 
-export class ResponseParseError extends Error {
-  readonly name = "ResponseParseError";
-  readonly status: number;
-  readonly statusText: string;
-  readonly headers: Headers;
-  readonly response: Response;
-  readonly method: string;
-  readonly url: string;
-  readonly rawBody: string;
-  readonly cause: unknown;
-
+class ResponseParseError extends Error {
   constructor(
-    response: Response,
-    rawBody: string,
-    cause: unknown,
-    requestInfo: { method: string; url: string },
+    public response: Response,
+    public raw: string,
+    public cause: unknown,
+    public requestInfo: { method: string; url: string },
   ) {
-    super(
-      `Failed to parse response from ${requestInfo.method} ${response.url || requestInfo.url} ` +
-        `(${response.status} ${response.statusText}) as JSON`,
-    );
-    Object.setPrototypeOf(this, new.target.prototype);
-
-    this.status = response.status;
-    this.statusText = response.statusText;
-    this.headers = response.headers;
-    this.response = response;
-    this.method = requestInfo.method;
-    this.url = response.url || requestInfo.url;
-    this.rawBody = rawBody;
-    this.cause = cause;
+    super(`Failed to parse response from ${response.url}`);
+    this.name = "ResponseParseError";
   }
 }
 
@@ -205,13 +131,10 @@ async function parseJsonBody(
 }
 
 async function parseErrorBody(response: Response, method: string): Promise<unknown> {
-  if (hasNoBody(response, method)) {
-    return null;
-  }
+  if (hasNoBody(response, method)) return null;
 
   const mediaType = getMediaType(response.headers);
 
-  // Fall back to text when blob() is unavailable (e.g. some React Native builds).
   if (mediaType && !isJsonMediaType(mediaType) && !isTextMediaType(mediaType)) {
     return typeof response.blob === "function" ? response.blob() : response.text();
   }
@@ -220,9 +143,7 @@ async function parseErrorBody(response: Response, method: string): Promise<unkno
   const normalized = stripBom(raw);
   const trimmed = normalized.trim();
 
-  if (trimmed === "") {
-    return null;
-  }
+  if (trimmed === "") return null;
 
   if (isJsonMediaType(mediaType) || looksLikeJson(normalized)) {
     try {
@@ -237,7 +158,6 @@ async function parseErrorBody(response: Response, method: string): Promise<unkno
 
 function inferResponseType(response: Response): "json" | "text" | "blob" {
   const mediaType = getMediaType(response.headers);
-
   if (isJsonMediaType(mediaType)) return "json";
   if (isTextMediaType(mediaType) || mediaType == null) return "text";
   return "blob";
@@ -248,9 +168,7 @@ async function parseSuccessBody(
   responseType: "json" | "text" | "blob" | "auto",
   requestInfo: { method: string; url: string },
 ): Promise<unknown> {
-  if (hasNoBody(response, requestInfo.method)) {
-    return null;
-  }
+  if (hasNoBody(response, requestInfo.method)) return null;
 
   const effectiveType =
     responseType === "auto" ? inferResponseType(response) : responseType;
@@ -258,17 +176,15 @@ async function parseSuccessBody(
   switch (effectiveType) {
     case "json":
       return parseJsonBody(response, requestInfo);
-
     case "text": {
       const text = await response.text();
       return text === "" ? null : text;
     }
-
     case "blob":
       if (typeof response.blob !== "function") {
         throw new TypeError(
           "Blob responses are not supported in this runtime. " +
-            "Use responseType \"json\" or \"text\" instead.",
+            'Use responseType "json" or "text" instead.',
         );
       }
       return response.blob();
@@ -287,7 +203,13 @@ export async function customFetch<T = unknown>(
     throw new TypeError(`customFetch: ${method} requests cannot have a body.`);
   }
 
-  const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+  // Resolver URL base para llamadas a /api/*
+  const resolvedInput = resolveInput(input);
+
+  const headers = mergeHeaders(
+    isRequest(input) ? input.headers : undefined,
+    headersInit,
+  );
 
   if (
     typeof init.body === "string" &&
@@ -301,9 +223,9 @@ export async function customFetch<T = unknown>(
     headers.set("accept", DEFAULT_JSON_ACCEPT);
   }
 
-  const requestInfo = { method, url: resolveUrl(input) };
+  const requestInfo = { method, url: resolveUrl(resolvedInput) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const response = await fetch(resolvedInput, { ...init, method, headers });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

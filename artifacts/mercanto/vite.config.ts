@@ -6,12 +6,12 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig(({ mode }) => {
   // Cargar variables de entorno basadas en el modo (development, production, etc.)
-  // El tercer parámetro '' carga todas las variables sin importar el prefijo VITE_
   const env = loadEnv(mode, process.cwd(), "");
 
-  // Valores por defecto razonables para evitar que el arranque se rompa
+  // Valores por defecto razonables
   const port = Number(env.PORT) || 5173;
   const basePath = env.BASE_PATH || "/";
+  const apiUrl = env.VITE_API_URL || 'https://mercanto-api.onrender.com';
 
   return {
     base: basePath,
@@ -54,11 +54,25 @@ export default defineConfig(({ mode }) => {
         strict: true,
         deny: ["**/.*"],
       },
+      proxy: {
+        '/api': {
+          target: apiUrl,
+          changeOrigin: true,
+          secure: true,
+        },
+      },
     },
     preview: {
       port,
       host: "0.0.0.0",
       allowedHosts: true,
+      proxy: {
+        '/api': {
+          target: apiUrl,
+          changeOrigin: true,
+          secure: true,
+        },
+      },
     },
   };
 });

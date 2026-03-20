@@ -37,5 +37,116 @@ export const CATEGORY_CARDS = [
     badge: 'Recojo en tienda',
     gradient: 'from-pink-400 to-rose-500',
     icon: '👗'
-  }
+  },
+];
+
+export const TACORA_ITEMS = [
+  {
+    id: 1,
+    name: "Chaqueta de cuero vintage",
+    price: 85.00,
+    category: "Ropa",
+    condition: "Muy Bueno",
+    seller: "María G.",
+    icon: "🧥"
+  },
+  {
+    id: 2,
+    name: "Laptop HP 14\" i5",
+    price: 950.00,
+    category: "Electrónicos",
+    condition: "Como Nuevo",
+    seller: "Carlos P.",
+    icon: "💻"
+  },
+  {
+    id: 3,
+    name: "Juego de ollas acero inox",
+    price: 120.00,
+    category: "Hogar",
+    condition: "Muy Bueno",
+    seller: "Rosa M.",
+    icon: "🍳"
+  },
+  {
+    id: 4,
+    name: "Colección Harry Potter completa",
+    price: 95.00,
+    category: "Libros",
+    condition: "Como Nuevo",
+    seller: "Luis T.",
+    icon: "📚"
+  },
+  {
+    id: 5,
+    name: "Bicicleta montaña Trek",
+    price: 450.00,
+    category: "Deportes",
+    condition: "Muy Bueno",
+    seller: "Pedro A.",
+    icon: "🚲"
+  },
+  {
+    id: 6,
+    name: "Guitarra acústica Yamaha",
+    price: 280.00,
+    category: "Instrumentos",
+    condition: "Como Nuevo",
+    seller: "Ana R.",
+    icon: "🎸"
+  },
+  {
+    id: 7,
+    name: "Vestido floral talla M",
+    price: 35.00,
+    category: "Ropa",
+    condition: "Bueno",
+    seller: "Sofia L.",
+    icon: "👗"
+  },
+  {
+    id: 8,
+    name: "iPhone 12 64GB",
+    price: 1200.00,
+    category: "Electrónicos",
+    condition: "Como Nuevo",
+    seller: "Diego F.",
+    icon: "📱"
+  },
+  {
+    id: 9,
+    name: "Silla ergonómica oficina",
+    price: 200.00,
+    category: "Hogar",
+    condition: "Muy Bueno",
+    seller: "Carmen V.",
+    icon: "🪑"
+  },
+  {
+    id: 10,
+    name: "Teclado MIDI Roland",
+    price: 350.00,
+    category: "Instrumentos",
+    condition: "Como Nuevo",
+    seller: "Javier M.",
+    icon: "🎹"
+  },
+  {
+    id: 11,
+    name: "Zapatillas Nike Air Max",
+    price: 150.00,
+    category: "Ropa",
+    condition: "Bueno",
+    seller: "Miguel S.",
+    icon: "👟"
+  },
+  {
+    id: 12,
+    name: "Tablet Samsung Galaxy",
+    price: 600.00,
+    category: "Electrónicos",
+    condition: "Muy Bueno",
+    seller: "Lucia B.",
+    icon: "📱"
+  },
 ];

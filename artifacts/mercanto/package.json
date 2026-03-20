@@ -3,11 +3,14 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "description": "Frontend React + Vite para Mercanto marketplace",
   "scripts": {
     "dev": "vite --config vite.config.ts --host 0.0.0.0",
     "build": "vite build --config vite.config.ts",
-    "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "preview": "vite preview --config vite.config.ts --host 0.0.0.0",
+    "serve": "npm run build && npm run preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc --noEmit"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",

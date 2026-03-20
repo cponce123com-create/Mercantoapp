@@ -5,8 +5,9 @@ import { storesController } from '@/controllers/stores';
 import { ordersController } from '@/controllers/orders';
 import { authMiddleware, roleGuard } from '@/middleware/auth';
 import { AppError } from '@/utils/types';
-import { updateStoreStatusSchema, listStoresSchema, storeIdSchema } from '@/validators/stores';
+import { updateStoreStatusSchema, listStoresSchema, storeIdSchema, updateStoreSchema } from '@/validators/stores';
 import { listOrdersSchema } from '@/validators/orders';
+import { updateUserSchema } from '@/validators/users';
 
 const adminRouter = new Hono();
 
@@ -259,6 +260,25 @@ adminRouter.patch('/stores/:id/status', async (c) => {
   }
 });
 
+// Editar tienda (admin)
+adminRouter.put('/stores/:id', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'), 10);
+    const body = await c.req.json();
+    const input = updateStoreSchema.parse(body);
+    const store = await storesController.updateStore(id, input);
+    return c.json({ success: true, data: store });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return c.json({ success: false, error: error.message }, error.statusCode);
+    }
+    if (error instanceof Error && error.name === 'ZodError') {
+      return c.json({ success: false, error: 'Validación fallida', errors: (error as any).errors }, 400);
+    }
+    return c.json({ success: false, error: 'Error al actualizar tienda' }, 500);
+  }
+});
+
 // ============================================================================
 // PEDIDOS - Listado completo con info de usuario y tienda
 // ============================================================================
@@ -334,6 +354,104 @@ adminRouter.patch('/orders/:id/status', async (c) => {
       return c.json({ success: false, error: error.message }, error.statusCode);
     }
     return c.json({ success: false, error: 'Error al actualizar estado de pedido' }, 500);
+  }
+});
+
+// ============================================================================
+// USUARIOS - Gestión de roles y listado
+// ============================================================================
+
+// Listar usuarios
+adminRouter.get('/users', async (c) => {
+  try {
+    const db = getDb();
+    const query = c.req.query();
+    const page = parseInt(query.page || '1', 10);
+    const limit = parseInt(query.limit || '15', 10);
+    const offset = (page - 1) * limit;
+
+    const result = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        role: users.role,
+        created_at: users.created_at,
+      })
+      .from(users)
+      .orderBy(desc(users.created_at))
+      .limit(limit)
+      .offset(offset);
+
+    const countResult = await db.select({ total: count(users.id) }).from(users);
+    const total = Number(countResult[0]?.total ?? 0);
+    const pages = Math.ceil(total / limit);
+
+    return c.json({
+      success: true,
+      data: result,
+      pagination: { page, limit, total, pages },
+    });
+  } catch (error) {
+    console.error('Error al listar usuarios admin:', error);
+    return c.json({ success: false, error: 'Error al listar usuarios' }, 500);
+  }
+});
+
+// Actualizar rol de usuario
+adminRouter.patch('/users/:id/role', async (c) => {
+  try {
+    const db = getDb();
+    const id = parseInt(c.req.param('id'), 10);
+    const body = await c.req.json();
+    
+    if (!['admin', 'store_owner', 'customer'].includes(body.role)) {
+      return c.json({ success: false, error: 'Rol inválido' }, 400);
+    }
+
+    const [updatedUser] = await db
+      .update(users)
+      .set({ 
+        role: body.role,
+        updated_at: new Date()
+      })
+      .where(eq(users.id, id))
+      .returning({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        role: users.role
+      });
+
+    if (!updatedUser) {
+      return c.json({ success: false, error: 'Usuario no encontrado' }, 404);
+    }
+
+    return c.json({ success: true, data: updatedUser });
+  } catch (error) {
+    console.error('Error al actualizar rol de usuario:', error);
+    return c.json({ success: false, error: 'Error al actualizar rol' }, 500);
+  }
+});
+
+// Eliminar usuario
+adminRouter.delete('/users/:id', async (c) => {
+  try {
+    const db = getDb();
+    const id = parseInt(c.req.param('id'), 10);
+    
+    // No permitir que un admin se borre a sí mismo
+    const currentUser = c.get('user');
+    if (currentUser.id === id) {
+      return c.json({ success: false, error: 'No puedes eliminar tu propia cuenta' }, 400);
+    }
+
+    await db.delete(users).where(eq(users.id, id));
+    
+    return c.json({ success: true, message: 'Usuario eliminado correctamente' });
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error);
+    return c.json({ success: false, error: 'Error al eliminar usuario' }, 500);
   }
 });
 

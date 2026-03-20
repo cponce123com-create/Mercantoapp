@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+export const API_URL = "https://mercanto-api.onrender.com";
+
 interface User {
   id: number;
   email: string;
@@ -23,7 +25,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkSession = async () => {
     try {
-      const res = await fetch('/api/auth/me');
+      const res = await fetch(`${API_URL}/api/auth/me`, {
+        credentials: "include",
+      });
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
@@ -48,7 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch(`${API_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: "include",
+      });
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     } finally {

@@ -26,14 +26,6 @@ export const updateStoreSchema = z.object({
   status: z.enum(['pending', 'approved', 'rejected']).optional(),
 });
 
-export const updateStoreStatusSchema = z.object({
-  status: z.enum(['pending', 'approved', 'rejected'], {
-    errorMap: () => ({ message: 'Estado inválido. Debe ser pending, approved o rejected' }),
-  }),
-});
-
-export type UpdateStoreStatusInput = z.infer<typeof updateStoreStatusSchema>;
-
 export const storeIdSchema = z.object({
   id: z.coerce.number().int().positive('ID debe ser un número positivo'),
 });

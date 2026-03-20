@@ -8,12 +8,12 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           
           <div className="md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4 cursor-pointer group">
+            <Link href="/" className="flex items-center gap-2 mb-4 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl">
               <div className="bg-primary text-white p-1.5 rounded-xl group-hover:scale-105 transition-transform">
-                <ShoppingCart size={24} strokeWidth={2.5} />
+                <ShoppingCart size={24} strokeWidth={2.5} aria-hidden="true" />
               </div>
               <span className="font-display font-bold text-2xl tracking-tight text-white group-hover:text-primary/90 transition-colors">
-                mercanto
+                Mercanto
               </span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed mb-6">
@@ -24,33 +24,31 @@ export function Footer() {
           <div>
             <h4 className="font-bold text-lg mb-4 text-white">Sobre nosotros</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><Link href="/" className="hover:text-primary transition-colors cursor-pointer">Inicio</Link></li>
-              <li><Link href="/tiendas" className="hover:text-primary transition-colors cursor-pointer">Tiendas</Link></li>
-              <li><Link href="/tacora" className="hover:text-primary transition-colors cursor-pointer">Tacora</Link></li>
-              <li><button className="hover:text-primary transition-colors">Sobre Mercanto</button></li>
+              <li><Link href="/" className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded">Inicio</Link></li>
+              <li><Link href="/tiendas" className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded">Tiendas</Link></li>
+              <li><Link href="/tacora" className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded">Tacora</Link></li>
+              <li><span className="text-muted-foreground">Sobre Mercanto</span></li> {/* Cambiado a span si no es una página real */}
             </ul>
           </div>
 
           <div>
             <h4 className="font-bold text-lg mb-4 text-white">Para Negocios</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><button className="hover:text-primary transition-colors">Vende en Mercanto</button></li>
-              <li><button className="hover:text-primary transition-colors">Portal de vendedores</button></li>
-              <li><button className="hover:text-primary transition-colors">Casos de éxito</button></li>
-              <li><button className="hover:text-primary transition-colors">Centro de ayuda</button></li>
+              <li><span className="text-muted-foreground">Vende en Mercanto</span></li>
+              <li><span className="text-muted-foreground">Portal de vendedores</span></li>
+              <li><span className="text-muted-foreground">Casos de éxito</span></li>
+              <li><span className="text-muted-foreground">Centro de ayuda</span></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-bold text-lg mb-4 text-white">Contacto</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><button className="hover:text-primary transition-colors">Soporte al cliente</button></li>
-              <li><button className="hover:text-primary transition-colors">hola@mercanto.app</button></li>
+              <li><span className="text-muted-foreground">Soporte al cliente</span></li>
+              <li><span className="text-muted-foreground">hola@mercanto.app</span></li>
             </ul>
             <div className="mt-6">
-              <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-semibold transition-colors duration-200">
-                Descargar la App
-              </button>
+              <span className="px-5 py-2.5 bg-white/10 text-white rounded-xl text-sm font-semibold">Descargar la App</span>
             </div>
           </div>
 
@@ -59,9 +57,9 @@ export function Footer() {
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} Mercanto. Todos los derechos reservados.</p>
           <div className="flex gap-4 mt-4 md:mt-0">
-            <button className="hover:text-white transition-colors">Instagram</button>
-            <button className="hover:text-white transition-colors">Facebook</button>
-            <button className="hover:text-white transition-colors">TikTok</button>
+            <span className="text-muted-foreground">Instagram</span>
+            <span className="text-muted-foreground">Facebook</span>
+            <span className="text-muted-foreground">TikTok</span>
           </div>
         </div>
       </div>

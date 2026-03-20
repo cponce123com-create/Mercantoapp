@@ -6,6 +6,7 @@ import { useCategory } from "@/lib/CategoryContext";
 import { useListStores } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { filterStores } from "@/lib/categoryUtils";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -14,27 +15,13 @@ export default function Home() {
   const { data, isLoading, error, refetch } = useListStores({
     status: 'approved',
     is_active: true,
-    limit: 8
+    limit: 20
   });
 
   const stores = data?.data || [];
 
-  // Filtrado local por categoría si es necesario, aunque lo ideal sería por API
-  const filteredStores = activeCategory === 'all' 
-    ? stores 
-    : stores.filter(store => {
-        // Mapeo simple de categorías para el mock visual
-        const categoryMap: Record<string, string> = {
-          'restaurants': 'Restaurante',
-          'fruits': 'Frutas y Verduras',
-          'stores': 'Minimarket',
-          'clothes': 'Ropa',
-          'home': 'Hogar',
-          'tech': 'Tecnología',
-          'pharmacy': 'Salud'
-        };
-        return store.description?.includes(categoryMap[activeCategory]) || false;
-      });
+  // Filtrado centralizado por categoría
+  const filteredStores = filterStores(stores, '', activeCategory);
 
   return (
     <div className="w-full">
@@ -167,7 +154,7 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">Compra por categoría</h2>
               <p className="text-muted-foreground mt-2 text-lg">Encuentra exactamente lo que buscas en tu zona.</p>
             </div>
-            <button onClick={() => setLocation('/tiendas')} className="hidden sm:flex items-center gap-2 text-primary font-bold hover:text-primary/80 transition-colors group">
+            <button onClick={() => setLocation('/tiendas?categoria=all')} className="hidden sm:flex items-center gap-2 text-primary font-bold hover:text-primary/80 transition-colors group">
               Ver todas <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
