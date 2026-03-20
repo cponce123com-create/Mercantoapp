@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, MapPin, ShoppingBag, Star, Info, Clock, Plus, Check, Minus, AlertCircle } from "lucide-react";
+import { ArrowLeft, MapPin, ShoppingBag, Star, Info, Clock, Plus, Check, Minus, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
 import { useGetStore, useListProductsByStore } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +10,8 @@ export default function StoreDetail() {
   const [, params] = useRoute("/tienda/:id");
   const [, setLocation] = useLocation();
   const { items, addItem, updateQuantity } = useCart();
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [imageIndices, setImageIndices] = useState<Record<number, number>>({});
   
   const storeId = params?.id ? parseInt(params.id, 10) : 0;
 
@@ -94,6 +96,20 @@ export default function StoreDetail() {
     return item ? item.quantity : 0;
   };
 
+  const handlePrevImage = (productId: number, totalImages: number) => {
+    setImageIndices(prev => ({
+      ...prev,
+      [productId]: (prev[productId] || 0) === 0 ? totalImages - 1 : (prev[productId] || 0) - 1
+    }));
+  };
+
+  const handleNextImage = (productId: number, totalImages: number) => {
+    setImageIndices(prev => ({
+      ...prev,
+      [productId]: ((prev[productId] || 0) + 1) % totalImages
+    }));
+  };
+
   const categories = Array.from(new Set(storeProducts.map(p => p.category || 'General')));
 
   return (
@@ -170,24 +186,81 @@ export default function StoreDetail() {
                 {storeProducts.filter(p => (p.category || 'General') === category).map(product => {
                   const quantity = getItemQuantity(product.id);
                   const inCart = quantity > 0;
+                  const images = product.images || [product.image_url];
+                  const currentImageIndex = imageIndices[product.id] || 0;
+                  const currentImage = images[currentImageIndex];
+                  const hasMultipleImages = images.length > 1;
+                  const discountPercentage = product.discount_percentage || 0;
+                  const originalPrice = product.original_price || product.price;
+                  const discountPrice = product.discount_price || product.price;
                   
                   return (
-                    <div key={product.id} className={`bg-white p-3 md:p-4 rounded-2xl border ${inCart ? 'border-green-500 bg-green-50/30' : 'border-border'} shadow-sm hover:shadow-md transition-all flex flex-row sm:flex-col gap-4`}>
-                      <div className="w-24 h-24 sm:w-full sm:aspect-square bg-muted/30 rounded-xl flex items-center justify-center text-4xl sm:text-6xl overflow-hidden shrink-0">
-                        {product.image_url ? (
-                          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                    <div key={product.id} className={`bg-white p-3 md:p-4 rounded-2xl border ${inCart ? 'border-green-500 bg-green-50/30' : 'border-border'} shadow-sm hover:shadow-md transition-all flex flex-col`}>
+                      {/* Image Carousel */}
+                      <div className="relative w-full aspect-square bg-muted/30 rounded-xl flex items-center justify-center text-4xl md:text-6xl overflow-hidden mb-3 group">
+                        {currentImage ? (
+                          <img src={currentImage} alt={product.name} className="w-full h-full object-cover" />
                         ) : (
                           '📦'
                         )}
+                        
+                        {/* Image Navigation */}
+                        {hasMultipleImages && (
+                          <>
+                            <button
+                              onClick={() => handlePrevImage(product.id, images.length)}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <ChevronLeft size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleNextImage(product.id, images.length)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <ChevronRight size={18} />
+                            </button>
+                            
+                            {/* Image Indicators */}
+                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                              {images.map((_, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`w-2 h-2 rounded-full transition-all ${
+                                    idx === currentImageIndex ? 'bg-white w-6' : 'bg-white/50'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* Discount Badge */}
+                        {discountPercentage > 0 && (
+                          <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold">
+                            -{discountPercentage}%
+                          </div>
+                        )}
                       </div>
+
+                      {/* Product Info */}
                       <div className="flex-1 flex flex-col">
-                        <div className="flex-1">
-                          <h4 className="font-bold text-base md:text-lg leading-tight mb-1">{product.name}</h4>
-                          <p className="text-muted-foreground text-xs md:text-sm mb-2 sm:mb-4">{product.category || 'General'}</p>
+                        <h4 className="font-bold text-base md:text-lg leading-tight mb-1 line-clamp-2">{product.name}</h4>
+                        <p className="text-muted-foreground text-xs md:text-sm mb-2">{product.description || product.category || 'General'}</p>
+                        
+                        {/* Pricing */}
+                        <div className="mt-auto mb-3">
+                          {discountPercentage > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg md:text-xl font-bold text-primary">S/ {discountPrice.toFixed(2)}</span>
+                              <span className="text-sm text-muted-foreground line-through">S/ {originalPrice.toFixed(2)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-lg md:text-xl font-bold text-primary">S/ {originalPrice.toFixed(2)}</span>
+                          )}
                         </div>
-                        <div className="flex items-center justify-between mt-auto">
-                          <span className="text-lg md:text-xl font-bold text-primary">S/ {Number(product.price).toFixed(2)}</span>
-                          
+                        
+                        {/* Add to Cart / Quantity */}
+                        <div className="flex items-center justify-end">
                           {inCart ? (
                             <div className="flex items-center gap-2 bg-green-100 rounded-full p-1 border border-green-200 scale-90 sm:scale-100 origin-right">
                               <button 

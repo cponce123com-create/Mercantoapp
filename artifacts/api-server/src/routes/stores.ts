@@ -4,66 +4,27 @@ const router = Router();
 
 // Logos únicos para cada tienda
 const STORE_LOGOS = [
-  "https://images.unsplash.com/photo-1555939594-58d7cb561341?w=300&q=80", // Minimarket
-  "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&q=80", // Restaurante
-  "https://images.unsplash.com/photo-1587854692152-cbe660dbde0b?w=300&q=80", // Farmacia
-  "https://images.unsplash.com/photo-1578926078328-123456789012?w=300&q=80", // Ferretería
-  "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&q=80", // Ropa
-  "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&q=80", // Tecnología
-  "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&q=80", // Panadería
-  "https://images.unsplash.com/photo-1488459716781-6918f33427d7?w=300&q=80", // Frutas
-  "https://images.unsplash.com/photo-1507842217343-583f20270319?w=300&q=80", // Librería
-  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&q=80", // Zapatería
-  "https://images.unsplash.com/photo-1576091160550-112173f31c77?w=300&q=80", // Botica
-  "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=300&q=80", // Café
-  "https://images.unsplash.com/photo-1552053831-71594a27c62d?w=300&q=80", // Mascotas
-  "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&q=80", // Electro
-  "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=300&q=80", // Pizzería
-  "https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=300&q=80", // Supermercado
-  "https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=300&q=80", // Deportes
-  "https://images.unsplash.com/photo-1585074033192-4ff5ee7c583a?w=300&q=80", // Flores
-  "https://images.unsplash.com/photo-1531305535295-c69b0b91c94c?w=300&q=80", // Juguetes
-  "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&q=80"  // Óptica
+  "https://images.unsplash.com/photo-1555939594-58d7cb561341?w=300&q=80",
+  "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&q=80",
+  "https://images.unsplash.com/photo-1587854692152-cbe660dbde0b?w=300&q=80",
+  "https://images.unsplash.com/photo-1578926078328-123456789012?w=300&q=80",
+  "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&q=80",
+  "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&q=80",
+  "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&q=80",
+  "https://images.unsplash.com/photo-1488459716781-6918f33427d7?w=300&q=80",
+  "https://images.unsplash.com/photo-1507842217343-583f20270319?w=300&q=80",
+  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&q=80",
+  "https://images.unsplash.com/photo-1576091160550-112173f31c77?w=300&q=80",
+  "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=300&q=80",
+  "https://images.unsplash.com/photo-1552053831-71594a27c62d?w=300&q=80",
+  "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&q=80",
+  "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=300&q=80",
+  "https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=300&q=80",
+  "https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=300&q=80",
+  "https://images.unsplash.com/photo-1585074033192-4ff5ee7c583a?w=300&q=80",
+  "https://images.unsplash.com/photo-1531305535295-c69b0b91c94c?w=300&q=80",
+  "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&q=80"
 ];
-
-// Imágenes de productos variados
-const PRODUCT_IMAGES = {
-  ABARROTES: [
-    "https://images.unsplash.com/photo-1599599810694-b5ac4dd64b73?w=400&q=80",
-    "https://images.unsplash.com/photo-1585518419759-8f9e5c6b9e1e?w=400&q=80",
-    "https://images.unsplash.com/photo-1585518419759-8f9e5c6b9e1e?w=400&q=80"
-  ],
-  FRUTAS: [
-    "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&q=80",
-    "https://images.unsplash.com/photo-1557804506-669714d2e9d8?w=400&q=80",
-    "https://images.unsplash.com/photo-1599599810694-b5ac4dd64b73?w=400&q=80"
-  ],
-  ROPA: [
-    "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&q=80",
-    "https://images.unsplash.com/photo-1551028719-00167b16ebc5?w=400&q=80",
-    "https://images.unsplash.com/photo-1506629082632-401017062bd9?w=400&q=80"
-  ],
-  TECNOLOGIA: [
-    "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&q=80",
-    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80",
-    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80"
-  ],
-  COMIDA: [
-    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80",
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80",
-    "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&q=80"
-  ],
-  SALUD: [
-    "https://images.unsplash.com/photo-1587854692152-cbe660dbde0b?w=400&q=80",
-    "https://images.unsplash.com/photo-1576091160550-112173f31c77?w=400&q=80",
-    "https://images.unsplash.com/photo-1631549916768-4c4f7da47eae?w=400&q=80"
-  ],
-  HOGAR: [
-    "https://images.unsplash.com/photo-1578500494198-246f612d03b3?w=400&q=80",
-    "https://images.unsplash.com/photo-1578926078328-123456789012?w=400&q=80",
-    "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80"
-  ]
-};
 
 const STORES = [
   { id: 1, name: "Bodega San Ramón", description: "Minimarket con productos de primera necesidad. Frutas y Verduras frescas.", email: "contacto@bodegasanramon.com", phone: "987654321", address: "Jr. Progreso 123", city: "San Ramón, Chanchamayo", country: "Perú", logo_url: STORE_LOGOS[0], status: "approved", is_active: true, created_at: new Date().toISOString() },
@@ -88,42 +49,152 @@ const STORES = [
   { id: 20, name: "Óptica Visión", description: "Salud visual. Lentes y monturas.", email: "vision@optica.com", phone: "987654340", address: "Jr. Huancayo 1515", city: "San Ramón, Chanchamayo", country: "Perú", logo_url: STORE_LOGOS[19], status: "approved", is_active: true, created_at: new Date().toISOString() }
 ];
 
-const PRODUCTS_MOCK = [
-  // Abarrotes
-  { id: 1, name: "Arroz Extra 1kg", description: "Arroz de alta calidad", price: 4.50, stock: 100, sku: "PROD-001", category: "Abarrotes", image_url: PRODUCT_IMAGES.ABARROTES[0], is_active: true, created_at: new Date().toISOString() },
-  { id: 2, name: "Aceite Vegetal 1L", description: "Aceite para cocina", price: 8.90, stock: 50, sku: "PROD-002", category: "Abarrotes", image_url: PRODUCT_IMAGES.ABARROTES[1], is_active: true, created_at: new Date().toISOString() },
-  { id: 3, name: "Azúcar Blanca 1kg", description: "Azúcar refinada", price: 3.20, stock: 80, sku: "PROD-003", category: "Abarrotes", image_url: PRODUCT_IMAGES.ABARROTES[2], is_active: true, created_at: new Date().toISOString() },
+// Generar 10 productos detallados por tienda
+const generateProductsForStore = (storeId: number, storeName: string) => {
+  const products = [];
+  const categories = ["Abarrotes", "Frutas y Verduras", "Ropa", "Tecnología", "Comida Típica", "Salud", "Hogar", "Deportes"];
   
-  // Frutas
-  { id: 4, name: "Plátano de Isla", description: "Fruta fresca de la región", price: 2.00, stock: 200, sku: "PROD-004", category: "Frutas y Verduras", image_url: PRODUCT_IMAGES.FRUTAS[0], is_active: true, created_at: new Date().toISOString() },
-  { id: 5, name: "Papaya Selva", description: "Papaya dulce y jugosa", price: 3.50, stock: 30, sku: "PROD-005", category: "Frutas y Verduras", image_url: PRODUCT_IMAGES.FRUTAS[1], is_active: true, created_at: new Date().toISOString() },
-  { id: 6, name: "Naranja Fresca", description: "Naranjas recién cosechadas", price: 1.50, stock: 150, sku: "PROD-006", category: "Frutas y Verduras", image_url: PRODUCT_IMAGES.FRUTAS[2], is_active: true, created_at: new Date().toISOString() },
-  
-  // Ropa
-  { id: 7, name: "Polo Algodón", description: "Polo de algodón 100%", price: 25.00, stock: 20, sku: "PROD-007", category: "Ropa", image_url: PRODUCT_IMAGES.ROPA[0], is_active: true, created_at: new Date().toISOString() },
-  { id: 8, name: "Pantalón Jeans", description: "Pantalón jeans de calidad", price: 45.00, stock: 15, sku: "PROD-008", category: "Ropa", image_url: PRODUCT_IMAGES.ROPA[1], is_active: true, created_at: new Date().toISOString() },
-  { id: 9, name: "Zapatillas Deportivas", description: "Zapatillas cómodas", price: 60.00, stock: 10, sku: "PROD-009", category: "Ropa", image_url: PRODUCT_IMAGES.ROPA[2], is_active: true, created_at: new Date().toISOString() },
-  
-  // Tecnología
-  { id: 10, name: "Cable USB-C", description: "Cable de carga rápida", price: 15.00, stock: 40, sku: "PROD-010", category: "Tecnología", image_url: PRODUCT_IMAGES.TECNOLOGIA[0], is_active: true, created_at: new Date().toISOString() },
-  { id: 11, name: "Auriculares Bluetooth", description: "Auriculares inalámbricos", price: 85.00, stock: 25, sku: "PROD-011", category: "Tecnología", image_url: PRODUCT_IMAGES.TECNOLOGIA[1], is_active: true, created_at: new Date().toISOString() },
-  { id: 12, name: "Power Bank 20000mAh", description: "Batería portátil", price: 55.00, stock: 18, sku: "PROD-012", category: "Tecnología", image_url: PRODUCT_IMAGES.TECNOLOGIA[2], is_active: true, created_at: new Date().toISOString() },
-  
-  // Comida
-  { id: 13, name: "Arroz con Pollo", description: "Plato típico peruano", price: 18.00, stock: 50, sku: "PROD-013", category: "Comida Típica", image_url: PRODUCT_IMAGES.COMIDA[0], is_active: true, created_at: new Date().toISOString() },
-  { id: 14, name: "Ceviche Fresco", description: "Ceviche de pescado", price: 22.00, stock: 30, sku: "PROD-014", category: "Comida Típica", image_url: PRODUCT_IMAGES.COMIDA[1], is_active: true, created_at: new Date().toISOString() },
-  { id: 15, name: "Pizza Margherita", description: "Pizza artesanal", price: 25.00, stock: 20, sku: "PROD-015", category: "Comida Típica", image_url: PRODUCT_IMAGES.COMIDA[2], is_active: true, created_at: new Date().toISOString() },
-  
-  // Salud
-  { id: 16, name: "Vitamina C 1000mg", description: "Suplemento vitamínico", price: 18.00, stock: 60, sku: "PROD-016", category: "Salud", image_url: PRODUCT_IMAGES.SALUD[0], is_active: true, created_at: new Date().toISOString() },
-  { id: 17, name: "Analgésico Forte", description: "Medicamento para el dolor", price: 12.00, stock: 40, sku: "PROD-017", category: "Salud", image_url: PRODUCT_IMAGES.SALUD[1], is_active: true, created_at: new Date().toISOString() },
-  { id: 18, name: "Protector Solar SPF 50", description: "Protección solar", price: 35.00, stock: 25, sku: "PROD-018", category: "Salud", image_url: PRODUCT_IMAGES.SALUD[2], is_active: true, created_at: new Date().toISOString() },
-  
-  // Hogar
-  { id: 19, name: "Escoba de Fibra", description: "Escoba resistente", price: 12.00, stock: 50, sku: "PROD-019", category: "Hogar", image_url: PRODUCT_IMAGES.HOGAR[0], is_active: true, created_at: new Date().toISOString() },
-  { id: 20, name: "Destornillador Set", description: "Set de herramientas", price: 28.00, stock: 35, sku: "PROD-020", category: "Hogar", image_url: PRODUCT_IMAGES.HOGAR[1], is_active: true, created_at: new Date().toISOString() },
-  { id: 21, name: "Lámpara LED", description: "Lámpara de bajo consumo", price: 32.00, stock: 20, sku: "PROD-021", category: "Hogar", image_url: PRODUCT_IMAGES.HOGAR[2], is_active: true, created_at: new Date().toISOString() }
-];
+  const productTemplates = [
+    {
+      name: "Arroz Premium 1kg",
+      category: "Abarrotes",
+      description: "Arroz de alta calidad, grano largo y blanco. Perfecto para cualquier comida.",
+      price: 5.50,
+      discount: 10,
+      images: [
+        "https://images.unsplash.com/photo-1599599810694-b5ac4dd64b73?w=500&q=80",
+        "https://images.unsplash.com/photo-1585518419759-8f9e5c6b9e1e?w=500&q=80"
+      ]
+    },
+    {
+      name: "Aceite Vegetal 1L",
+      category: "Abarrotes",
+      description: "Aceite refinado para cocina, ideal para frituras y salsas.",
+      price: 9.90,
+      discount: 15,
+      images: [
+        "https://images.unsplash.com/photo-1585518419759-8f9e5c6b9e1e?w=500&q=80",
+        "https://images.unsplash.com/photo-1599599810694-b5ac4dd64b73?w=500&q=80"
+      ]
+    },
+    {
+      name: "Azúcar Blanca 1kg",
+      category: "Abarrotes",
+      description: "Azúcar refinada de excelente calidad para endulzar tus bebidas.",
+      price: 3.50,
+      discount: 5,
+      images: [
+        "https://images.unsplash.com/photo-1599599810694-b5ac4dd64b73?w=500&q=80"
+      ]
+    },
+    {
+      name: "Plátano de Isla",
+      category: "Frutas y Verduras",
+      description: "Fruta fresca de la región, rica en potasio y vitaminas.",
+      price: 2.50,
+      discount: 0,
+      images: [
+        "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80",
+        "https://images.unsplash.com/photo-1557804506-669714d2e9d8?w=500&q=80"
+      ]
+    },
+    {
+      name: "Papaya Selva",
+      category: "Frutas y Verduras",
+      description: "Papaya dulce y jugosa, recién cosechada del campo.",
+      price: 4.00,
+      discount: 20,
+      images: [
+        "https://images.unsplash.com/photo-1557804506-669714d2e9d8?w=500&q=80",
+        "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80"
+      ]
+    },
+    {
+      name: "Naranja Fresca",
+      category: "Frutas y Verduras",
+      description: "Naranjas recién cosechadas, llenas de vitamina C.",
+      price: 2.00,
+      discount: 10,
+      images: [
+        "https://images.unsplash.com/photo-1599599810694-b5ac4dd64b73?w=500&q=80"
+      ]
+    },
+    {
+      name: "Polo Algodón Premium",
+      category: "Ropa",
+      description: "Polo de algodón 100%, cómodo y duradero para el día a día.",
+      price: 35.00,
+      discount: 25,
+      images: [
+        "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80",
+        "https://images.unsplash.com/photo-1551028719-00167b16ebc5?w=500&q=80"
+      ]
+    },
+    {
+      name: "Pantalón Jeans Clásico",
+      category: "Ropa",
+      description: "Pantalón jeans de calidad, perfecto para cualquier ocasión.",
+      price: 65.00,
+      discount: 30,
+      images: [
+        "https://images.unsplash.com/photo-1551028719-00167b16ebc5?w=500&q=80",
+        "https://images.unsplash.com/photo-1506629082632-401017062bd9?w=500&q=80"
+      ]
+    },
+    {
+      name: "Zapatillas Deportivas",
+      category: "Ropa",
+      description: "Zapatillas cómodas y modernas para deportes y uso casual.",
+      price: 85.00,
+      discount: 35,
+      images: [
+        "https://images.unsplash.com/photo-1506629082632-401017062bd9?w=500&q=80",
+        "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80"
+      ]
+    },
+    {
+      name: "Cable USB-C Rápido",
+      category: "Tecnología",
+      description: "Cable de carga rápida, compatible con múltiples dispositivos.",
+      price: 20.00,
+      discount: 15,
+      images: [
+        "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=500&q=80",
+        "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80"
+      ]
+    }
+  ];
+
+  // Crear 10 productos por tienda
+  for (let i = 0; i < 10; i++) {
+    const template = productTemplates[i % productTemplates.length];
+    products.push({
+      id: storeId * 1000 + i + 1,
+      store_id: storeId,
+      name: `${template.name} (${storeName})`,
+      description: template.description,
+      price: template.price + (i * 0.5),
+      original_price: template.price + (i * 0.5),
+      discount_percentage: template.discount,
+      discount_price: Math.round(((template.price + (i * 0.5)) * (100 - template.discount)) / 100 * 100) / 100,
+      stock: Math.floor(Math.random() * 100) + 10,
+      sku: `SKU-${storeId}-${i + 1}`,
+      category: template.category,
+      image_url: template.images[0],
+      images: template.images,
+      is_active: true,
+      created_at: new Date().toISOString()
+    });
+  }
+
+  return products;
+};
+
+// Generar todos los productos
+const ALL_PRODUCTS: any[] = [];
+STORES.forEach(store => {
+  ALL_PRODUCTS.push(...generateProductsForStore(store.id, store.name));
+});
 
 // GET /api/stores
 router.get("/", (req, res) => {
@@ -162,12 +233,12 @@ router.get("/:id", (req, res) => {
 // GET /api/stores/:id/products
 router.get("/:id/products", (req, res) => {
   const storeId = parseInt(req.params.id);
-  // Devolvemos productos para todas las tiendas para que no se vea vacío
-  const products = PRODUCTS_MOCK.map(p => ({ ...p, store_id: storeId }));
+  const products = ALL_PRODUCTS.filter(p => p.store_id === storeId);
+  
   return res.json({
     success: true,
     data: products,
-    pagination: { page: 1, limit: 50, total: products.length, pages: 1 },
+    pagination: { page: 1, limit: 100, total: products.length, pages: 1 },
   });
 });
 
