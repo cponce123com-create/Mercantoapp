@@ -36,11 +36,9 @@ export function Navbar() {
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
             <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-              <div className="bg-primary text-white p-1.5 rounded-xl group-hover:scale-105 transition-transform duration-300 shadow-md shadow-primary/20">
-                <ShoppingCart size={24} strokeWidth={2.5} />
-              </div>
-              <span className="font-display font-extrabold text-2xl tracking-tight text-primary">
-                mercanto
+              <img src="/logo.png" alt="Mercanto" className="h-10 w-10 group-hover:scale-105 transition-transform duration-300" />
+              <span className="font-display font-extrabold text-xl tracking-tight text-primary hidden sm:inline">
+                Mercanto
               </span>
             </Link>
           </div>
