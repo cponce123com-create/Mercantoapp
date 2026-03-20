@@ -188,6 +188,12 @@ components:
           type: string
         price:
           type: number
+        original_price:
+          type: number
+        discount_price:
+          type: number
+        discount_percentage:
+          type: integer
         stock:
           type: integer
         sku:
@@ -196,6 +202,10 @@ components:
           type: string
         image_url:
           type: string
+        images:
+          type: array
+          items:
+            type: string
         is_active:
           type: boolean
         created_at:

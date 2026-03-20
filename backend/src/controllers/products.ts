@@ -24,16 +24,21 @@ export const productsController = {
         name: input.name,
         description: input.description,
         price: String(input.price),
+        original_price: input.original_price ? String(input.original_price) : null,
+        discount_price: input.discount_price ? String(input.discount_price) : null,
+        discount_percentage: input.discount_percentage,
         stock: input.stock,
         sku: input.sku,
         category: input.category,
         image_url: input.image_url,
+        images: input.images,
         is_active: input.is_active,
       };
 
       const result = await db.insert(products).values(newProduct).returning();
       return result[0];
     } catch (error) {
+      console.error('Error creating product:', error);
       throw new AppError(500, 'Error al crear el producto', undefined);
     }
   },
@@ -100,9 +105,11 @@ export const productsController = {
     // Verify product exists
     await this.getProductById(id);
 
-    const updateData: Partial<NewProduct> = {
+    const updateData: any = {
       ...input,
       price: input.price ? String(input.price) : undefined,
+      original_price: input.original_price ? String(input.original_price) : undefined,
+      discount_price: input.discount_price ? String(input.discount_price) : undefined,
       updated_at: new Date(),
     };
 

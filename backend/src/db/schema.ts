@@ -9,6 +9,7 @@ import {
   boolean,
   foreignKey,
   index,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -93,10 +94,14 @@ export const products = pgTable(
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description'),
     price: decimal('price', { precision: 10, scale: 2 }).notNull(),
+    original_price: decimal('original_price', { precision: 10, scale: 2 }),
+    discount_price: decimal('discount_price', { precision: 10, scale: 2 }),
+    discount_percentage: integer('discount_percentage'),
     stock: integer('stock').default(0).notNull(),
     sku: varchar('sku', { length: 100 }).unique(),
     category: varchar('category', { length: 100 }),
     image_url: varchar('image_url', { length: 500 }),
+    images: jsonb('images').default([]),
     is_active: boolean('is_active').default(true).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
@@ -154,7 +159,7 @@ export const orders = pgTable(
   })
 );
 
-export const ordersRelations = relations(orders, ({ one, many }) => ({
+export const usersRelationsForOrders = relations(orders, ({ one, many }) => ({
   user: one(users, {
     fields: [orders.user_id],
     references: [users.id],

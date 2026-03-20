@@ -8,10 +8,14 @@ export const createProductSchema = z.object({
     const num = typeof val === 'string' ? parseFloat(val) : val;
     return num > 0 && !isNaN(num);
   }, 'El precio debe ser un número positivo'),
+  original_price: z.string().or(z.number()).optional(),
+  discount_price: z.string().or(z.number()).optional(),
+  discount_percentage: z.coerce.number().int().min(0).max(100).optional(),
   stock: z.coerce.number().int().nonnegative('El stock no puede ser negativo').default(0),
   sku: z.string().max(100).optional(),
   category: z.string().max(100).optional(),
   image_url: z.string().url('URL de imagen inválida').optional(),
+  images: z.array(z.string().url('URL de imagen inválida')).optional().default([]),
   is_active: z.boolean().default(true),
 });
 
@@ -22,10 +26,14 @@ export const updateProductSchema = z.object({
     const num = typeof val === 'string' ? parseFloat(val) : val;
     return num > 0 && !isNaN(num);
   }, 'El precio debe ser un número positivo').optional(),
+  original_price: z.string().or(z.number()).optional(),
+  discount_price: z.string().or(z.number()).optional(),
+  discount_percentage: z.coerce.number().int().min(0).max(100).optional(),
   stock: z.coerce.number().int().nonnegative('El stock no puede ser negativo').optional(),
   sku: z.string().max(100).optional(),
   category: z.string().max(100).optional(),
   image_url: z.string().url('URL de imagen inválida').optional(),
+  images: z.array(z.string().url('URL de imagen inválida')).optional(),
   is_active: z.boolean().optional(),
 });
 

@@ -13,6 +13,7 @@
     "db:migrate:manual": "tsx scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:pilot": "tsx scripts/seed-pilot.ts",
+    "db:seed:complete": "tsx scripts/seed-complete.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts",
