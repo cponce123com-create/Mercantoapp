@@ -7,6 +7,7 @@ export function CartDrawer() {
   const { isCartOpen, closeCart, items, updateQuantity, removeItem, total } = useCart();
   const [, setLocation] = useLocation();
   const drawerRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -15,9 +16,11 @@ export function CartDrawer() {
     if (isCartOpen) {
       document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
+      // Enfoque en el botón de cerrar cuando se abre el drawer
+      closeButtonRef.current?.focus();
     } else {
       document.body.style.overflow = 'unset';
-    }
+    };
     return () => {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
@@ -32,11 +35,15 @@ export function CartDrawer() {
       <div 
         className="fixed inset-0 bg-black/50 z-[90] backdrop-blur-sm transition-opacity"
         onClick={closeCart}
+        aria-hidden="true"
       />
       
       {/* Drawer */}
       <div 
         ref={drawerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cart-title"
         className="fixed inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto z-[95] w-full h-[90vh] sm:h-full sm:w-[400px] bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out rounded-t-[2.5rem] sm:rounded-none"
         style={{ transform: isCartOpen ? 'translateY(0)' : 'translateY(100%)' }}
       >
@@ -47,14 +54,16 @@ export function CartDrawer() {
 
         <div className="flex items-center justify-between p-6 pt-2 sm:pt-6 border-b border-border/50">
           <div className="flex items-center gap-3">
-            <div className="bg-primary/10 p-2 rounded-full text-primary">
+            <div className="bg-primary/10 p-2 rounded-full text-primary" aria-hidden="true">
               <ShoppingBag size={20} />
             </div>
-            <h2 className="text-xl font-bold font-display">Tu Carrito</h2>
+            <h2 id="cart-title" className="text-xl font-bold font-display">Tu carrito</h2>
           </div>
           <button 
+            ref={closeButtonRef}
             onClick={closeCart}
-            className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground"
+            aria-label="Cerrar carrito"
+            className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <X size={20} />
           </button>
@@ -63,7 +72,7 @@ export function CartDrawer() {
         <div className="flex-1 overflow-y-auto p-6">
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-              <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center text-muted-foreground">
+              <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center text-muted-foreground" aria-hidden="true">
                 <ShoppingBag size={48} strokeWidth={1.5} />
               </div>
               <h3 className="text-xl font-bold text-foreground">Tu carrito está vacío</h3>
@@ -72,7 +81,7 @@ export function CartDrawer() {
               </p>
               <button 
                 onClick={closeCart}
-                className="mt-4 px-6 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 transition-colors"
+                className="mt-4 px-6 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 Empezar a comprar
               </button>
@@ -84,10 +93,10 @@ export function CartDrawer() {
                 <span className="text-sm font-bold text-foreground">{items[0].storeName}</span>
               </div>
               
-              <div className="space-y-4">
+              <div className="space-y-4" role="list">
                 {items.map((item) => (
-                  <div key={item.id} className="flex gap-4 p-4 bg-white border border-border rounded-2xl shadow-sm">
-                    <div className="w-16 h-16 bg-muted/30 rounded-xl flex items-center justify-center text-3xl shrink-0">
+                  <div key={item.id} className="flex gap-4 p-4 bg-white border border-border rounded-2xl shadow-sm" role="listitem">
+                    <div className="w-16 h-16 bg-muted/30 rounded-xl flex items-center justify-center text-3xl shrink-0" aria-hidden="true">
                       {item.icon}
                     </div>
                     
@@ -96,7 +105,8 @@ export function CartDrawer() {
                         <h4 className="font-bold text-sm leading-tight text-foreground">{item.name}</h4>
                         <button 
                           onClick={() => removeItem(item.productId)}
-                          className="text-muted-foreground hover:text-destructive transition-colors"
+                          aria-label={`Eliminar ${item.name} del carrito`}
+                          className="text-muted-foreground hover:text-destructive transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive rounded"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -107,17 +117,19 @@ export function CartDrawer() {
                           S/ {(item.price * item.quantity).toFixed(2)}
                         </span>
                         
-                        <div className="flex items-center gap-3 bg-muted rounded-lg p-1">
+                        <div className="flex items-center gap-3 bg-muted rounded-lg p-1" role="group" aria-label={`Cantidad de ${item.name}`}>
                           <button 
                             onClick={() => updateQuantity(item.productId, -1)}
-                            className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-foreground hover:bg-accent hover:text-primary transition-colors"
+                            aria-label={`Disminuir cantidad de ${item.name}`}
+                            className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-foreground hover:bg-accent hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                           >
                             <Minus size={14} />
                           </button>
-                          <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
+                          <span className="text-sm font-bold w-4 text-center" aria-live="polite">{item.quantity}</span>
                           <button 
                             onClick={() => updateQuantity(item.productId, 1)}
-                            className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-foreground hover:bg-accent hover:text-primary transition-colors"
+                            aria-label={`Aumentar cantidad de ${item.name}`}
+                            className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-foreground hover:bg-accent hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                           >
                             <Plus size={14} />
                           </button>
@@ -153,7 +165,7 @@ export function CartDrawer() {
                 closeCart();
                 setLocation('/pedido');
               }}
-              className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-lg shadow-lg shadow-primary/20"
+              className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-lg shadow-lg shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               Proceder al pedido
             </button>
@@ -161,7 +173,7 @@ export function CartDrawer() {
             <div className="mt-4 text-center">
               <button 
                 onClick={closeCart}
-                className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+                className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
               >
                 Seguir comprando
               </button>
