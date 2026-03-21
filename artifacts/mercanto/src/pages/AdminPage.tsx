@@ -4,7 +4,6 @@ import { useAuth } from "@/lib/AuthContext";
 import {
   LayoutDashboard,
   Store as StoreIcon,
-  Package,
   ShoppingCart,
   Users,
   ArrowLeft,
@@ -18,7 +17,43 @@ import {
   Loader,
   Check,
   X,
+  Search,
+  Filter,
+  MoreVertical,
+  ChevronRight,
+  UserPlus,
+  ShieldCheck,
+  Trash2,
+  ExternalLink,
+  ArrowUpRight,
+  ArrowDownRight,
+  Calendar,
+  Settings,
+  Bell,
+  Menu,
 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface DashboardMetrics {
   totalOrdersToday: number;
@@ -38,6 +73,8 @@ interface Store {
   is_active: boolean;
   created_at: string;
   owner_id: number;
+  address?: string;
+  city?: string;
 }
 
 interface Order {
@@ -47,19 +84,32 @@ interface Order {
   status: string;
   total_amount: string;
   created_at: string;
+  user_name?: string;
+  store_name?: string;
+}
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  created_at: string;
 }
 
 export default function AdminPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "stores" | "orders">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "stores" | "orders" | "users" | "settings">("dashboard");
 
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [usersList, setUsersList] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     if (user && user.role !== "admin") {
@@ -70,17 +120,23 @@ export default function AdminPage() {
   const fetchMetrics = async () => {
     try {
       setLoading(true);
-      setError("");
-      const res = await fetch("/api/admin/dashboard/metrics");
+      const res = await fetch("/api/admin/dashboard");
       const data = await res.json();
-
       if (res.ok) {
-        setMetrics(data.data);
-      } else {
-        setError(data.error || "Error al cargar métricas");
+        const d = data.data;
+        setMetrics({
+          totalOrdersToday: d.orders.total,
+          totalRevenueToday: d.revenue.total,
+          totalActiveStores: d.stores.approved,
+          totalUsers: d.users.total,
+          pendingStores: d.stores.pending,
+          statusBreakdown: [],
+          salesByDay: d.dailyRevenue.map((r: any) => ({ date: r.day, total: parseFloat(r.total) }))
+        });
       }
+      else toast.error(data.error || "Error al cargar métricas");
     } catch {
-      setError("Error al conectar con el servidor");
+      toast.error("Error al conectar con el servidor");
     } finally {
       setLoading(false);
     }
@@ -89,17 +145,12 @@ export default function AdminPage() {
   const fetchStores = async () => {
     try {
       setLoading(true);
-      setError("");
-      const res = await fetch("/api/stores?status=pending&limit=100");
+      const res = await fetch("/api/admin/stores?limit=100");
       const data = await res.json();
-
-      if (res.ok) {
-        setStores(data.data);
-      } else {
-        setError(data.error || "Error al cargar tiendas");
-      }
+      if (res.ok) setStores(data.data);
+      else toast.error(data.error || "Error al cargar tiendas");
     } catch {
-      setError("Error al conectar con el servidor");
+      toast.error("Error al conectar con el servidor");
     } finally {
       setLoading(false);
     }
@@ -108,528 +159,516 @@ export default function AdminPage() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      setError("");
-      const res = await fetch("/api/admin/orders/recent?limit=20");
+      const res = await fetch("/api/admin/orders?limit=50");
       const data = await res.json();
-
-      if (res.ok) {
-        setOrders(data.data);
-      } else {
-        setError(data.error || "Error al cargar pedidos");
-      }
+      if (res.ok) setOrders(data.data);
+      else toast.error(data.error || "Error al cargar pedidos");
     } catch {
-      setError("Error al conectar con el servidor");
+      toast.error("Error al conectar con el servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/admin/users?limit=50");
+      const data = await res.json();
+      if (res.ok) setUsersList(data.data);
+      else toast.error(data.error || "Error al cargar usuarios");
+    } catch {
+      toast.error("Error al conectar con el servidor");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (activeTab === "dashboard") {
-      fetchMetrics();
-    } else if (activeTab === "stores") {
-      fetchStores();
-    } else if (activeTab === "orders") {
-      fetchOrders();
-    }
+    if (activeTab === "dashboard") fetchMetrics();
+    else if (activeTab === "stores") fetchStores();
+    else if (activeTab === "orders") fetchOrders();
+    else if (activeTab === "users") fetchUsers();
   }, [activeTab]);
 
-  const approveStore = async (storeId: number) => {
+  const updateStoreStatus = async (storeId: number, status: string) => {
     try {
       setActionLoading(storeId);
-      const res = await fetch(`/api/stores/${storeId}/approve`, { method: "POST" });
-      const data = await res.json();
-
+      const endpoint = status === "approved" ? "approve" : "reject";
+      const res = await fetch(`/api/admin/stores/${storeId}/${endpoint}`, { method: "PATCH" });
       if (res.ok) {
-        setStores(stores.map((s) => (s.id === storeId ? { ...s, status: "approved" } : s)));
+        toast.success(`Tienda ${status === "approved" ? "aprobada" : "rechazada"} con éxito`);
+        setStores(stores.map((s) => (s.id === storeId ? { ...s, status } : s)));
       } else {
-        setError(data.error || "Error al aprobar tienda");
+        const data = await res.json();
+        toast.error(data.error || "Error al actualizar estado");
       }
     } catch {
-      setError("Error al conectar con el servidor");
+      toast.error("Error de conexión");
     } finally {
       setActionLoading(null);
     }
   };
 
-  const rejectStore = async (storeId: number) => {
+  const updateUserRole = async (userId: number, role: string) => {
     try {
-      setActionLoading(storeId);
-      const res = await fetch(`/api/stores/${storeId}/reject`, { method: "POST" });
-      const data = await res.json();
-
+      const res = await fetch(`/api/admin/users/${userId}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
       if (res.ok) {
-        setStores(stores.map((s) => (s.id === storeId ? { ...s, status: "rejected" } : s)));
+        toast.success("Rol actualizado correctamente");
+        setUsersList(usersList.map((u) => (u.id === userId ? { ...u, role } : u)));
       } else {
-        setError(data.error || "Error al rechazar tienda");
+        const data = await res.json();
+        toast.error(data.error || "Error al actualizar rol");
       }
     } catch {
-      setError("Error al conectar con el servidor");
-    } finally {
-      setActionLoading(null);
+      toast.error("Error de conexión");
     }
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "completed":
-      case "Completado":
-        return (
-          <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-bold flex items-center gap-1 w-max">
-            <CheckCircle2 size={12} /> Completado
-          </span>
-        );
-      case "pending":
-      case "En proceso":
-        return (
-          <span className="px-2.5 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center gap-1 w-max">
-            <Clock size={12} /> Pendiente
-          </span>
-        );
-      case "confirmed":
-        return (
-          <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-bold flex items-center gap-1 w-max">
-            <Activity size={12} /> Confirmado
-          </span>
-        );
-      case "shipped":
-        return (
-          <span className="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-bold flex items-center gap-1 w-max">
-            <Activity size={12} /> Enviado
-          </span>
-        );
-      case "delivered":
-        return (
-          <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-bold flex items-center gap-1 w-max">
-            <CheckCircle2 size={12} /> Entregado
-          </span>
-        );
-      case "cancelled":
-        return (
-          <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-md text-xs font-bold flex items-center gap-1 w-max">
-            <XCircle size={12} /> Cancelado
-          </span>
-        );
-      default:
-        return (
-          <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-bold">
-            {status}
-          </span>
-        );
-    }
+    const variants: Record<string, any> = {
+      completed: { label: "Completado", className: "bg-green-100 text-green-700 border-green-200" },
+      pending: { label: "Pendiente", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+      confirmed: { label: "Confirmado", className: "bg-blue-100 text-blue-700 border-blue-200" },
+      shipped: { label: "Enviado", className: "bg-purple-100 text-purple-700 border-purple-200" },
+      delivered: { label: "Entregado", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+      cancelled: { label: "Cancelado", className: "bg-red-100 text-red-700 border-red-200" },
+      approved: { label: "Aprobada", className: "bg-green-100 text-green-700 border-green-200" },
+      rejected: { label: "Rechazada", className: "bg-red-100 text-red-700 border-red-200" },
+    };
+    const config = variants[status] || { label: status, className: "bg-gray-100 text-gray-700" };
+    return <Badge variant="outline" className={`${config.className} font-semibold`}>{config.label}</Badge>;
   };
 
-  const getApprovalStatusBadge = (status: string) => {
-    switch (status) {
-      case "approved":
-        return (
-          <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-md text-xs font-bold flex items-center gap-1 w-max">
-            <CheckCircle2 size={12} /> Aprobada
-          </span>
-        );
-      case "rejected":
-        return (
-          <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-md text-xs font-bold flex items-center gap-1 w-max">
-            <XCircle size={12} /> Rechazada
-          </span>
-        );
-      case "pending":
-        return (
-          <span className="px-2.5 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-bold flex items-center gap-1 w-max">
-            <Clock size={12} /> Pendiente
-          </span>
-        );
-      default:
-        return <span>{status}</span>;
-    }
-  };
-
-  if (!user || user.role !== "admin") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
-          <h2 className="text-2xl font-bold mb-2">Acceso Denegado</h2>
-          <p className="text-muted-foreground mb-6">
-            Solo los administradores pueden acceder a este panel.
-          </p>
-          <Link href="/" className="px-6 py-2 bg-primary text-white rounded-xl font-bold">
-            Volver al inicio
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (!user || user.role !== "admin") return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <div className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0">
-        <div className="p-6 border-b border-slate-800">
-          <Link
-            href="/"
-            className="text-white hover:text-white flex items-center gap-2 font-display font-bold text-xl mb-4 group"
-          >
-            <div className="bg-primary text-white p-1 rounded-lg group-hover:scale-105 transition-transform">
-              <ShoppingCart size={20} />
-            </div>
-            mercanto{" "}
-            <span className="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-sans tracking-wide">
-              ADMIN
-            </span>
+    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+      {/* Sidebar */}
+      <aside className={`${sidebarOpen ? "w-64" : "w-20"} bg-slate-900 text-slate-300 transition-all duration-300 flex flex-col shrink-0 z-50 fixed md:relative h-full`}>
+        <div className="p-6 flex items-center justify-between border-b border-slate-800">
+          <Link href="/" className={`flex items-center gap-3 font-bold text-xl text-white ${!sidebarOpen && "hidden"}`}>
+            <div className="bg-primary p-1.5 rounded-lg"><ShoppingCart size={20} /></div>
+            mercanto <span className="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 tracking-tighter">SAAS</span>
           </Link>
-          <Link
-            href="/"
-            className="text-sm text-slate-400 hover:text-white flex items-center gap-2 transition-colors"
-          >
-            <ArrowLeft size={16} /> Volver a la tienda
-          </Link>
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="text-slate-400 hover:text-white hover:bg-slate-800">
+            <Menu size={20} />
+          </Button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
-          <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              activeTab === "dashboard"
-                ? "bg-primary text-white font-medium shadow-md shadow-primary/20"
-                : "hover:bg-slate-800 hover:text-white"
-            }`}
-          >
-            <LayoutDashboard size={20} /> Dashboard
-          </button>
-          <button
-            onClick={() => setActiveTab("stores")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              activeTab === "stores"
-                ? "bg-primary text-white font-medium shadow-md shadow-primary/20"
-                : "hover:bg-slate-800 hover:text-white"
-            }`}
-          >
-            <StoreIcon size={20} /> Tiendas
-          </button>
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              activeTab === "orders"
-                ? "bg-primary text-white font-medium shadow-md shadow-primary/20"
-                : "hover:bg-slate-800 hover:text-white"
-            }`}
-          >
-            <ShoppingCart size={20} /> Pedidos
-          </button>
+        <nav className="flex-1 p-4 space-y-2 mt-4">
+          {[
+            { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
+            { id: "stores", icon: StoreIcon, label: "Tiendas" },
+            { id: "orders", icon: ShoppingCart, label: "Pedidos" },
+            { id: "users", icon: Users, label: "Usuarios" },
+            { id: "settings", icon: Settings, label: "Configuración" },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id as any)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
+                activeTab === item.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "hover:bg-slate-800 hover:text-white"
+              }`}
+            >
+              <item.icon size={20} className={activeTab === item.id ? "text-white" : "text-slate-400 group-hover:text-white"} />
+              {sidebarOpen && <span className="font-medium">{item.label}</span>}
+            </button>
+          ))}
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/50">
-            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">
-              {user.name.charAt(0).toUpperCase()}
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-800/40">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+              {user.name.charAt(0)}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user.name}</p>
-              <p className="text-xs text-slate-400 truncate">{user.email}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-auto h-screen p-4 md:p-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 capitalize font-display">
-              {activeTab}
-            </h1>
-            <p className="text-slate-500 text-sm">Resumen y gestión de la plataforma</p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm text-sm font-medium text-slate-600 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              Sistema Operativo
-            </div>
-          </div>
-        </div>
-
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl p-4 flex gap-3">
-            <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-bold text-red-900">Error</h3>
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "dashboard" && (
-          <div className="animate-in fade-in duration-300 space-y-6">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader size={32} className="animate-spin text-primary" />
+            {sidebarOpen && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white truncate">{user.name}</p>
+                <p className="text-xs text-slate-500 truncate">Administrador</p>
               </div>
-            ) : metrics ? (
+            )}
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Header */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="relative max-w-md w-full hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <Input 
+                placeholder="Buscar en la plataforma..." 
+                className="pl-10 bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-primary/30 rounded-full h-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" className="relative text-slate-500">
+              <Bell size={20} />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            </Button>
+            <div className="h-8 w-px bg-slate-200 mx-2"></div>
+            <Button variant="outline" size="sm" className="rounded-full gap-2 border-slate-200 text-slate-600" asChild>
+              <Link href="/"><ArrowLeft size={16} /> Ver Tienda</Link>
+            </Button>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            {/* Page Title */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 capitalize">{activeTab}</h1>
+                <p className="text-slate-500 mt-1">Gestiona tu ecosistema Mercanto desde un solo lugar.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button variant="outline" className="rounded-xl gap-2 border-slate-200 shadow-sm">
+                  <Calendar size={16} /> {new Date().toLocaleDateString('es-PE', { month: 'long', day: 'numeric' })}
+                </Button>
+                <Button className="rounded-xl gap-2 shadow-lg shadow-primary/20">
+                  <TrendingUp size={16} /> Exportar Reporte
+                </Button>
+              </div>
+            </div>
+
+            {activeTab === "dashboard" && (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
-                        <ShoppingCart size={20} />
-                      </div>
-                      <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md flex items-center gap-1">
-                        <TrendingUp size={12} /> Hoy
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-slate-500 text-sm font-medium mb-1">Pedidos hoy</h3>
-                      <p className="text-2xl font-bold text-slate-900 font-display">
-                        {metrics.totalOrdersToday}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="p-3 rounded-xl bg-green-100 text-green-600">
-                        <DollarSign size={20} />
-                      </div>
-                      <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md flex items-center gap-1">
-                        <TrendingUp size={12} /> Hoy
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-slate-500 text-sm font-medium mb-1">Ingresos hoy</h3>
-                      <p className="text-2xl font-bold text-slate-900 font-display">
-                        S/ {metrics.totalRevenueToday.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="p-3 rounded-xl bg-purple-100 text-purple-600">
-                        <StoreIcon size={20} />
-                      </div>
-                      <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-md">
-                        {metrics.pendingStores} pendientes
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-slate-500 text-sm font-medium mb-1">Tiendas activas</h3>
-                      <p className="text-2xl font-bold text-slate-900 font-display">
-                        {metrics.totalActiveStores}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="p-3 rounded-xl bg-orange-100 text-orange-600">
-                        <Users size={20} />
-                      </div>
-                      <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md flex items-center gap-1">
-                        <TrendingUp size={12} /> Activos
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-slate-500 text-sm font-medium mb-1">Usuarios</h3>
-                      <p className="text-2xl font-bold text-slate-900 font-display">
-                        {metrics.totalUsers}
-                      </p>
-                    </div>
-                  </div>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    { label: "Ventas Hoy", value: `S/ ${metrics?.totalRevenueToday.toFixed(2) || '0.00'}`, icon: DollarSign, color: "text-emerald-600", bg: "bg-emerald-50", trend: "+12.5%", trendUp: true },
+                    { label: "Pedidos Hoy", value: metrics?.totalOrdersToday || 0, icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50", trend: "+5.2%", trendUp: true },
+                    { label: "Tiendas Activas", value: metrics?.totalActiveStores || 0, icon: StoreIcon, color: "text-purple-600", bg: "bg-purple-50", trend: "0%", trendUp: true },
+                    { label: "Usuarios Totales", value: metrics?.totalUsers || 0, icon: Users, color: "text-orange-600", bg: "bg-orange-50", trend: "+2.1%", trendUp: true },
+                  ].map((stat, i) => (
+                    <Card key={i} className="border-none shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className={`${stat.bg} ${stat.color} p-3 rounded-2xl`}>
+                            <stat.icon size={24} />
+                          </div>
+                          <Badge variant="secondary" className={`rounded-full ${stat.trendUp ? "text-emerald-600 bg-emerald-50" : "text-red-600 bg-red-50"}`}>
+                            {stat.trendUp ? <ArrowUpRight size={12} className="mr-1" /> : <ArrowDownRight size={12} className="mr-1" />}
+                            {stat.trend}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                          <h3 className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</h3>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                    <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                      <h2 className="font-bold text-slate-900">Pedidos recientes</h2>
-                      <button
-                        onClick={() => setActiveTab("orders")}
-                        className="text-sm text-primary font-semibold hover:underline"
-                      >
-                        Ver todos
-                      </button>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm text-left">
-                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                          <tr>
-                            <th className="px-6 py-4">ID</th>
-                            <th className="px-6 py-4">Fecha</th>
-                            <th className="px-6 py-4">Total</th>
-                            <th className="px-6 py-4">Estado</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {orders.slice(0, 5).map((order) => (
-                            <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="px-6 py-4 font-medium text-slate-900">#{order.id}</td>
-                              <td className="px-6 py-4 text-slate-600">
-                                {new Date(order.created_at).toLocaleDateString("es-PE")}
-                              </td>
-                              <td className="px-6 py-4 font-bold text-slate-900">
-                                S/ {parseFloat(order.total_amount).toFixed(2)}
-                              </td>
-                              <td className="px-6 py-4">{getStatusBadge(order.status)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
-                    <h2 className="font-bold text-slate-900 mb-6">Ventas por Día (Últimos 7 días)</h2>
-                    <div className="flex-1 flex items-end justify-between gap-2 h-48 mt-auto pt-4 border-b border-slate-100 pb-2">
-                      {metrics.salesByDay.map((day, i) => {
-                        const maxSale = Math.max(...metrics.salesByDay.map((d) => d.total), 1);
-                        return (
-                          <div key={i} className="flex flex-col items-center gap-2 w-full group">
-                            <div className="relative w-full flex justify-center h-full items-end">
-                              <div
-                                className="w-full max-w-[2rem] bg-primary/20 hover:bg-primary rounded-t-sm transition-all duration-300"
-                                style={{ height: `${(day.total / maxSale) * 100}%` || "5%" }}
-                              ></div>
-                              <div className="absolute -top-8 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                S/{day.total.toFixed(0)}
-                              </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Main Chart Placeholder */}
+                  <Card className="lg:col-span-2 border-none shadow-sm rounded-2xl">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg font-bold">Rendimiento de Ventas</CardTitle>
+                        <CardDescription>Ingresos generados en los últimos 7 días</CardDescription>
+                      </div>
+                      <Button variant="ghost" size="icon" className="text-slate-400"><MoreVertical size={20} /></Button>
+                    </CardHeader>
+                    <CardContent className="h-[300px] flex items-end gap-2 px-6 pb-8">
+                      {metrics?.salesByDay.map((day, i) => (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                          <div 
+                            className="w-full bg-primary/10 group-hover:bg-primary/30 transition-colors rounded-t-lg relative"
+                            style={{ height: `${Math.max(10, (day.total / (Math.max(...metrics.salesByDay.map(d => d.total)) || 1)) * 100)}%` }}
+                          >
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                              S/ {day.total.toFixed(2)}
                             </div>
-                            <span className="text-xs text-slate-400 font-medium">
-                              {new Date(day.date).toLocaleDateString("es-PE", { weekday: "short" })}
-                            </span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">{day.date.split('-')[2]}</span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+
+                  {/* Pending Approvals */}
+                  <Card className="border-none shadow-sm rounded-2xl">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-bold">Alertas de Gestión</CardTitle>
+                      <CardDescription>Acciones que requieren tu atención</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {metrics?.pendingStores && metrics.pendingStores > 0 ? (
+                        <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-2xl flex items-start gap-4">
+                          <div className="bg-yellow-500 text-white p-2 rounded-xl"><StoreIcon size={20} /></div>
+                          <div>
+                            <p className="font-bold text-yellow-900">{metrics.pendingStores} Tiendas Pendientes</p>
+                            <p className="text-xs text-yellow-700 mt-1">Nuevos negocios esperan aprobación para vender.</p>
+                            <Button variant="link" onClick={() => setActiveTab("stores")} className="p-0 h-auto text-xs font-bold text-yellow-800 mt-2">Revisar ahora <ChevronRight size={12} /></Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center border-2 border-dashed border-slate-100 rounded-2xl">
+                          <CheckCircle2 size={32} className="mx-auto text-emerald-500 mb-2" />
+                          <p className="text-sm text-slate-500">Todo al día. No hay tareas pendientes.</p>
+                        </div>
+                      )}
+                      
+                      <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-4">
+                        <div className="bg-blue-500 text-white p-2 rounded-xl"><Activity size={20} /></div>
+                        <div>
+                          <p className="font-bold text-blue-900">Sistema Estable</p>
+                          <p className="text-xs text-blue-700 mt-1">Todos los servicios están operando normalmente.</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </>
-            ) : null}
-          </div>
-        )}
+            )}
 
-        {activeTab === "stores" && (
-          <div className="animate-in fade-in duration-300 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <h2 className="font-bold text-slate-900">Tiendas Pendientes de Aprobación</h2>
-              <div className="text-sm text-slate-600">
-                {stores.length} tienda{stores.length !== 1 ? "s" : ""} pendiente
-                {stores.length !== 1 ? "s" : ""}
-              </div>
-            </div>
+            {activeTab === "stores" && (
+              <Card className="border-none shadow-sm rounded-2xl overflow-hidden">
+                <CardHeader className="border-b border-slate-100 bg-white p-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <CardTitle className="text-xl font-bold">Directorio de Tiendas</CardTitle>
+                      <CardDescription>Administra los comercios registrados en la plataforma.</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" className="rounded-xl border-slate-200"><Filter size={16} className="mr-2" /> Filtros</Button>
+                      <Button size="sm" className="rounded-xl"><UserPlus size={16} className="mr-2" /> Invitar Tienda</Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader className="bg-slate-50/50">
+                      <TableRow>
+                        <TableHead className="pl-6">Tienda</TableHead>
+                        <TableHead>Ubicación</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Registro</TableHead>
+                        <TableHead className="text-right pr-6">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {stores.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase())).map((store) => (
+                        <TableRow key={store.id} className="hover:bg-slate-50/50 transition-colors">
+                          <TableCell className="pl-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
+                                {store.name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-900">{store.name}</p>
+                                <p className="text-xs text-slate-500">{store.email}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-slate-600 text-sm">
+                            {store.city || "No especificada"}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(store.status)}</TableCell>
+                          <TableCell className="text-slate-500 text-xs">
+                            {new Date(store.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right pr-6">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="rounded-full"><MoreVertical size={18} /></Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="rounded-xl w-48">
+                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {store.status === "pending" && (
+                                  <>
+                                    <DropdownMenuItem onClick={() => updateStoreStatus(store.id, "approved")} className="text-emerald-600 font-medium">
+                                      <Check size={16} className="mr-2" /> Aprobar Tienda
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => updateStoreStatus(store.id, "rejected")} className="text-red-600 font-medium">
+                                      <X size={16} className="mr-2" /> Rechazar Tienda
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                <DropdownMenuItem><ExternalLink size={16} className="mr-2" /> Ver Perfil Público</DropdownMenuItem>
+                                <DropdownMenuItem className="text-red-600"><Trash2 size={16} className="mr-2" /> Eliminar</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {stores.length === 0 && !loading && (
+                    <div className="p-12 text-center">
+                      <StoreIcon size={48} className="mx-auto text-slate-200 mb-4" />
+                      <p className="text-slate-500 font-medium">No se encontraron tiendas.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader size={32} className="animate-spin text-primary" />
-              </div>
-            ) : stores.length === 0 ? (
-              <div className="p-12 text-center">
-                <CheckCircle2 size={48} className="mx-auto mb-4 text-green-500" />
-                <p className="text-slate-600">No hay tiendas pendientes de aprobación</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                    <tr>
-                      <th className="px-6 py-4">Tienda</th>
-                      <th className="px-6 py-4">Email</th>
-                      <th className="px-6 py-4">Estado</th>
-                      <th className="px-6 py-4 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {stores.map((store) => (
-                      <tr key={store.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <span className="font-bold text-slate-900">{store.name}</span>
-                        </td>
-                        <td className="px-6 py-4 text-slate-600">{store.email}</td>
-                        <td className="px-6 py-4">{getApprovalStatusBadge(store.status)}</td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => approveStore(store.id)}
-                              disabled={actionLoading === store.id || store.status !== "pending"}
-                              className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Aprobar tienda"
-                            >
-                              {actionLoading === store.id ? (
-                                <Loader size={16} className="animate-spin" />
-                              ) : (
-                                <Check size={16} />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => rejectStore(store.id)}
-                              disabled={actionLoading === store.id || store.status !== "pending"}
-                              className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Rechazar tienda"
-                            >
-                              {actionLoading === store.id ? (
-                                <Loader size={16} className="animate-spin" />
-                              ) : (
-                                <X size={16} />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {activeTab === "orders" && (
+              <Card className="border-none shadow-sm rounded-2xl overflow-hidden">
+                <CardHeader className="border-b border-slate-100 bg-white p-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <CardTitle className="text-xl font-bold">Flujo de Pedidos</CardTitle>
+                      <CardDescription>Monitorea todas las transacciones en tiempo real.</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader className="bg-slate-50/50">
+                      <TableRow>
+                        <TableHead className="pl-6">ID Pedido</TableHead>
+                        <TableHead>Cliente / Tienda</TableHead>
+                        <TableHead>Monto</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead className="text-right pr-6">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.map((order) => (
+                        <TableRow key={order.id} className="hover:bg-slate-50/50 transition-colors">
+                          <TableCell className="pl-6 py-4 font-bold text-slate-900">#{order.id}</TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <p className="font-medium text-slate-900">{order.user_name || `Usuario #${order.user_id}`}</p>
+                              <p className="text-xs text-slate-500 flex items-center gap-1"><StoreIcon size={10} /> {order.store_name || `Tienda #${order.store_id}`}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-bold text-slate-900">S/ {parseFloat(order.total_amount).toFixed(2)}</TableCell>
+                          <TableCell>{getStatusBadge(order.status)}</TableCell>
+                          <TableCell className="text-slate-500 text-xs">{new Date(order.created_at).toLocaleString()}</TableCell>
+                          <TableCell className="text-right pr-6">
+                            <Button variant="ghost" size="sm" className="rounded-lg text-primary font-bold">Detalles</Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === "users" && (
+              <Card className="border-none shadow-sm rounded-2xl overflow-hidden">
+                <CardHeader className="border-b border-slate-100 bg-white p-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <CardTitle className="text-xl font-bold">Gestión de Usuarios</CardTitle>
+                      <CardDescription>Controla los accesos y roles de la plataforma.</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader className="bg-slate-50/50">
+                      <TableRow>
+                        <TableHead className="pl-6">Usuario</TableHead>
+                        <TableHead>Rol</TableHead>
+                        <TableHead>Fecha Registro</TableHead>
+                        <TableHead className="text-right pr-6">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {usersList.map((u) => (
+                        <TableRow key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                          <TableCell className="pl-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">
+                                {u.name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-900">{u.name}</p>
+                                <p className="text-xs text-slate-500">{u.email}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={`rounded-full ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : u.role === 'store_owner' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
+                              {u.role === 'admin' ? 'Admin' : u.role === 'store_owner' ? 'Dueño' : 'Cliente'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-slate-500 text-xs">{new Date(u.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell className="text-right pr-6">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="rounded-full"><MoreVertical size={18} /></Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="rounded-xl w-48">
+                                <DropdownMenuLabel>Cambiar Rol</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => updateUserRole(u.id, "admin")}><ShieldCheck size={16} className="mr-2" /> Hacer Admin</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => updateUserRole(u.id, "store_owner")}><StoreIcon size={16} className="mr-2" /> Hacer Dueño</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => updateUserRole(u.id, "customer")}><Users size={16} className="mr-2" /> Hacer Cliente</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-red-600"><Trash2 size={16} className="mr-2" /> Eliminar Usuario</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === "settings" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <Card className="border-none shadow-sm rounded-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold">Configuración Global</CardTitle>
+                    <CardDescription>Ajustes generales de la plataforma SaaS.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700">Nombre de la Plataforma</label>
+                      <Input defaultValue="Mercanto SaaS" className="rounded-xl border-slate-200" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700">Comisión por Venta (%)</label>
+                      <Input type="number" defaultValue="5" className="rounded-xl border-slate-200" />
+                    </div>
+                    <Button className="w-full rounded-xl font-bold">Guardar Cambios</Button>
+                  </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm rounded-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold">Mantenimiento</CardTitle>
+                    <CardDescription>Acciones críticas del sistema.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-red-50 border border-red-100 rounded-2xl">
+                      <p className="text-sm font-bold text-red-900">Modo Mantenimiento</p>
+                      <p className="text-xs text-red-700 mt-1">Desactiva el acceso a todos los usuarios excepto administradores.</p>
+                      <Button variant="destructive" size="sm" className="mt-3 rounded-lg font-bold">Activar Modo</Button>
+                    </div>
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                      <p className="text-sm font-bold text-slate-900">Limpiar Caché</p>
+                      <p className="text-xs text-slate-600 mt-1">Fuerza la actualización de datos en tiempo real.</p>
+                      <Button variant="outline" size="sm" className="mt-3 rounded-lg font-bold border-slate-200">Ejecutar Limpieza</Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
           </div>
-        )}
-
-        {activeTab === "orders" && (
-          <div className="animate-in fade-in duration-300 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <h2 className="font-bold text-slate-900">Gestión de Pedidos</h2>
-              <div className="text-sm text-slate-600">
-                {orders.length} pedido{orders.length !== 1 ? "s" : ""} reciente
-                {orders.length !== 1 ? "s" : ""}
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader size={32} className="animate-spin text-primary" />
-              </div>
-            ) : orders.length === 0 ? (
-              <div className="p-12 text-center">
-                <ShoppingCart size={48} className="mx-auto mb-4 text-slate-400" />
-                <p className="text-slate-600">No hay pedidos registrados</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                    <tr>
-                      <th className="px-6 py-4">ID</th>
-                      <th className="px-6 py-4">Fecha</th>
-                      <th className="px-6 py-4">Total</th>
-                      <th className="px-6 py-4">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {orders.map((order) => (
-                      <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-slate-900">#{order.id}</td>
-                        <td className="px-6 py-4 text-slate-600">
-                          {new Date(order.created_at).toLocaleDateString("es-PE")}
-                        </td>
-                        <td className="px-6 py-4 font-bold text-slate-900">
-                          S/ {parseFloat(order.total_amount).toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4">{getStatusBadge(order.status)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
