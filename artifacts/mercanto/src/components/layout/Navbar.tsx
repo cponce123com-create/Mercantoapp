@@ -274,31 +274,7 @@ export function Navbar() {
         )}
       </div>
 
-      {/* Category Navigation Pills */}
-      <nav className="border-t border-border/50 bg-white/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 py-3 overflow-x-auto hide-scrollbar snap-x" role="tablist">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                role="tab"
-                aria-selected={activeCategory === cat.id}
-                aria-label={`Categoría: ${cat.name}`}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap text-sm font-semibold transition-all duration-300 snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                  activeCategory === cat.id 
-                    ? "bg-primary text-white shadow-md shadow-primary/25 scale-105" 
-                    : cat.color
-                )}
-              >
-                <span className="text-base" aria-hidden="true">{cat.icon}</span>
-                {cat.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      </nav>
+
     </header>
 
     {/* Mobile Menu Overlay */}
