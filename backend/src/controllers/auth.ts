@@ -13,8 +13,8 @@ export const register = async (c: Context) => {
   try {
     const { email, password, name } = await c.req.json();
 
-    // El rol siempre debe ser 'buyer' en el registro público
-    const userRole = 'buyer';
+    // El rol siempre debe ser 'customer' en el registro público
+    const userRole = 'customer';
 
     // Verificar si el usuario ya existe
     const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);

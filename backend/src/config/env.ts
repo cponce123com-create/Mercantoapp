@@ -11,7 +11,7 @@ if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
 }
 
 export const config = {
-  node_env: process.env.NODE_ENV || 'development',
+  node_env: process.env.NODE_ENV || 'production',
   port: parseInt(process.env.PORT || '3001', 10),
   database_url: process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/mercanto',
   log_level: process.env.LOG_LEVEL || 'info',

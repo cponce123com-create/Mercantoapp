@@ -105,19 +105,33 @@ export default function CheckoutPage() {
         quantity: item.quantity,
       }));
 
-      // Crear la orden
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: user.id,
-          store_id: storeId,
-          shipping_address: formData.shippingAddress || null,
-          delivery_method: formData.deliveryMethod,
-          notes: formData.notes || undefined,
-          items: orderItems,
-        }),
-      });
+      // Crear la orden con timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos de timeout
+
+      let res;
+      try {
+        res = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: user.id,
+            store_id: storeId,
+            shipping_address: formData.shippingAddress || null,
+            delivery_method: formData.deliveryMethod,
+            notes: formData.notes || undefined,
+            items: orderItems,
+          }),
+          signal: controller.signal,
+        });
+      } catch (fetchErr: any) {
+        if (fetchErr.name === 'AbortError') {
+          throw new Error("La solicitud tardó demasiado. Por favor, intenta de nuevo.");
+        }
+        throw new Error("Error de conexión. Verifica tu internet e intenta de nuevo.");
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       const data = await res.json();
 

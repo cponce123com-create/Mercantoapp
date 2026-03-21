@@ -6,7 +6,10 @@ export const corsMiddleware = async (c: Context, next: Next) => {
 
   // Check if origin is allowed
   const allowedOrigins = [config.cors_origin, 'http://localhost:3000', 'http://localhost:3001'];
-  const isAllowed = allowedOrigins.includes(origin) || config.node_env === 'development';
+  
+  // Solo permitir cualquier origen si estamos explícitamente en desarrollo
+  const isDevelopment = config.node_env === 'development';
+  const isAllowed = allowedOrigins.includes(origin) || isDevelopment;
 
   if (c.req.method === 'OPTIONS') {
     return c.text('', 204, {

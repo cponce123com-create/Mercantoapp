@@ -8,9 +8,18 @@ export const createOrderItemSchema = z.object({
 export const createOrderSchema = z.object({
   user_id: z.coerce.number().int().positive('user_id debe ser un número positivo'),
   store_id: z.coerce.number().int().positive('store_id debe ser un número positivo'),
-  shipping_address: z.string().min(5, 'La dirección debe tener al menos 5 caracteres'),
+  delivery_method: z.enum(['pickup', 'delivery']).default('pickup'),
+  shipping_address: z.string().nullable().optional(),
   notes: z.string().optional(),
   items: z.array(createOrderItemSchema).min(1, 'Debe haber al menos un producto en la orden'),
+}).refine((data) => {
+  if (data.delivery_method === 'delivery') {
+    return !!data.shipping_address && data.shipping_address.length >= 5;
+  }
+  return true;
+}, {
+  message: 'La dirección es obligatoria y debe tener al menos 5 caracteres para envíos a domicilio',
+  path: ['shipping_address'],
 });
 
 export const updateOrderStatusSchema = z.object({
