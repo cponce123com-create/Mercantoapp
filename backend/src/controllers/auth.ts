@@ -7,12 +7,13 @@ import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { config } from '@/config/env';
 
+const TOKEN_EXPIRATION_SECONDS = 60 * 60 * 24 * 7; // 7 días
+
 export const register = async (c: Context) => {
   try {
     const { email, password, name } = await c.req.json();
 
     // El rol siempre debe ser 'buyer' en el registro público
-    // Los roles 'seller' y 'admin' solo se asignan por un admin a través de un endpoint protegido
     const userRole = 'buyer';
 
     // Verificar si el usuario ya existe
@@ -32,9 +33,14 @@ export const register = async (c: Context) => {
       role: userRole,
     }).returning();
 
-    // Generar token JWT
+    // Generar token JWT con expiración
     const token = await sign(
-      { id: newUser.id, email: newUser.email, role: newUser.role },
+      { 
+        id: newUser.id, 
+        email: newUser.email, 
+        role: newUser.role,
+        exp: Math.floor(Date.now() / 1000) + TOKEN_EXPIRATION_SECONDS
+      },
       config.jwt_secret
     );
 
@@ -43,7 +49,7 @@ export const register = async (c: Context) => {
       httpOnly: true,
       secure: config.node_env === 'production',
       sameSite: 'Lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 días
+      maxAge: TOKEN_EXPIRATION_SECONDS,
     });
 
     return c.json({
@@ -78,9 +84,14 @@ export const login = async (c: Context) => {
       return c.json({ success: false, error: 'Credenciales inválidas' }, 401);
     }
 
-    // Generar token JWT
+    // Generar token JWT con expiración
     const token = await sign(
-      { id: user.id, email: user.email, role: user.role },
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role,
+        exp: Math.floor(Date.now() / 1000) + TOKEN_EXPIRATION_SECONDS
+      },
       config.jwt_secret
     );
 
@@ -89,7 +100,7 @@ export const login = async (c: Context) => {
       httpOnly: true,
       secure: config.node_env === 'production',
       sameSite: 'Lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 días
+      maxAge: TOKEN_EXPIRATION_SECONDS,
     });
 
     return c.json({

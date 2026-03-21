@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { rateLimiter } from 'hono-rate-limiter';
 import { config } from '@/config/env';
 import { errorHandler } from '@/middleware/errorHandler';
 import { corsMiddleware } from '@/middleware/cors';
@@ -9,7 +10,6 @@ import productsRouter from '@/routes/products';
 import ordersRouter from '@/routes/orders';
 import authRouter from '@/routes/auth';
 import adminRouter from '@/routes/admin';
-import { authMiddleware, roleGuard } from '@/middleware/auth';
 
 const app = new Hono();
 
@@ -18,10 +18,24 @@ app.use(loggerMiddleware);
 app.use(corsMiddleware);
 app.use(errorHandler);
 
+// Rate limiting para autenticación (máximo 10 intentos cada 15 minutos)
+const authLimiter = rateLimiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  keyGenerator: (c) => c.req.header('x-forwarded-for') || 'unknown',
+  handler: (c) => {
+    return c.json({ 
+      success: false, 
+      error: 'Demasiados intentos. Por favor, inténtelo de nuevo más tarde.' 
+    }, 429);
+  },
+});
+
 // Health check routes
 app.route('/api', healthRouter);
 
 // API routes
+app.use('/api/auth/*', authLimiter);
 app.route('/api/auth', authRouter);
 app.route('/api/stores', storesRouter);
 app.route('/api/products', productsRouter);

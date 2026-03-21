@@ -1,4 +1,4 @@
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, count } from 'drizzle-orm';
 import { getDb, products, Product, NewProduct, stores } from '@/db';
 import { AppError } from '@/utils/types';
 import type { CreateProductInput, UpdateProductInput, ListProductsInput } from '@/validators/products';
@@ -89,12 +89,12 @@ export const productsController = {
       .offset(offset);
 
     // Get total count
-    const countResult = await db
-      .select({ count: products.id })
+    const [countResult] = await db
+      .select({ total: count() })
       .from(products)
       .where(and(...conditions));
 
-    const total = countResult.length;
+    const total = Number(countResult.total);
 
     return { products: result, total };
   },

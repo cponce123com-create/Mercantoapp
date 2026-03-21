@@ -2,6 +2,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+if (!process.env.DATABASE_URL) {
+  console.warn('DATABASE_URL no está configurado. Usando valor por defecto de desarrollo.');
+}
+
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET no está configurado en producción. Abortando por seguridad.');
+}
+
 export const config = {
   node_env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3001', 10),

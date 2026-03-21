@@ -1,8 +1,7 @@
-import { eq, and, desc, sql, gte } from 'drizzle-orm';
+import { eq, and, desc, sql, gte, count, inArray } from 'drizzle-orm';
 import { getDb, orders, order_items, products, Order, NewOrder, OrderItem, NewOrderItem } from '@/db';
 import { AppError } from '@/utils/types';
 import type { CreateOrderInput, UpdateOrderStatusInput, ListOrdersInput } from '@/validators/orders';
-import { productsController } from './products';
 
 export const ordersController = {
   async createOrder(input: CreateOrderInput): Promise<Order> {
@@ -10,19 +9,26 @@ export const ordersController = {
 
     try {
       return await db.transaction(async (tx) => {
-        // 1. Calcular el monto total y verificar stock de forma atómica
+        // 1. Obtener todos los productos involucrados en una sola query
+        const productIds = input.items.map(item => item.product_id);
+        const dbProducts = await tx
+          .select()
+          .from(products)
+          .where(inArray(products.id, productIds));
+        
+        const productMap = new Map(dbProducts.map(p => [p.id, p]));
+        
         let totalAmount = 0;
 
+        // 2. Validar stock y decrementar atómicamente
         for (const item of input.items) {
-          const product = await tx.select().from(products).where(eq(products.id, item.product_id)).limit(1);
+          const product = productMap.get(item.product_id);
           
-          if (!product.length) {
+          if (!product) {
             throw new AppError(404, `Producto con ID ${item.product_id} no encontrado`);
           }
-
-          const currentProduct = product[0];
           
-          // Verificar y decrementar stock atómicamente en la transacción
+          // Decrementar stock atómicamente en la transacción
           const updated = await tx
             .update(products)
             .set({ 
@@ -31,19 +37,19 @@ export const ordersController = {
             })
             .where(and(
               eq(products.id, item.product_id),
-              gte(products.stock, item.quantity) // Guard incluido en la query
+              gte(products.stock, item.quantity)
             ))
             .returning();
 
           if (!updated.length) {
-            throw new AppError(400, `Stock insuficiente para el producto: ${currentProduct.name}`);
+            throw new AppError(400, `Stock insuficiente para el producto: ${product.name}`);
           }
 
-          const subtotal = parseFloat(currentProduct.price) * item.quantity;
+          const subtotal = parseFloat(product.price) * item.quantity;
           totalAmount += subtotal;
         }
 
-        // 2. Crear la orden
+        // 3. Crear la orden
         const newOrder: NewOrder = {
           user_id: input.user_id,
           store_id: input.store_id,
@@ -56,23 +62,21 @@ export const ordersController = {
         const orderResult = await tx.insert(orders).values(newOrder).returning();
         const createdOrder = orderResult[0];
 
-        // 3. Crear los items de la orden
-        for (const item of input.items) {
-          // Ya tenemos los datos del producto de la verificación anterior
-          const productResult = await tx.select().from(products).where(eq(products.id, item.product_id)).limit(1);
-          const product = productResult[0];
+        // 4. Crear los items de la orden (bulk insert)
+        const orderItemsToInsert: NewOrderItem[] = input.items.map(item => {
+          const product = productMap.get(item.product_id)!;
           const subtotal = parseFloat(product.price) * item.quantity;
 
-          const newOrderItem: NewOrderItem = {
+          return {
             order_id: createdOrder.id,
             product_id: item.product_id,
             quantity: item.quantity,
             unit_price: product.price,
             subtotal: String(subtotal),
           };
+        });
 
-          await tx.insert(order_items).values(newOrderItem);
-        }
+        await tx.insert(order_items).values(orderItemsToInsert);
 
         return createdOrder;
       });
@@ -154,14 +158,12 @@ export const ordersController = {
       .offset(offset);
 
     // Get total count
-    let countQuery = db.select({ count: orders.id }).from(orders);
+    const [countResult] = await db
+      .select({ total: count() })
+      .from(orders)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
 
-    if (conditions.length > 0) {
-      countQuery = countQuery.where(and(...conditions));
-    }
-
-    const countResult = await countQuery;
-    const total = countResult.length;
+    const total = Number(countResult.total);
 
     return { orders: result, total };
   },
