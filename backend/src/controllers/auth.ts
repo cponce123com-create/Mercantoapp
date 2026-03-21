@@ -9,11 +9,11 @@ import { config } from '@/config/env';
 
 export const register = async (c: Context) => {
   try {
-    const { email, password, name, role } = await c.req.json();
+    const { email, password, name } = await c.req.json();
 
-    // Validar rol
-    const validRoles = ['buyer', 'seller', 'admin'];
-    const userRole = validRoles.includes(role) ? role : 'buyer';
+    // El rol siempre debe ser 'buyer' en el registro público
+    // Los roles 'seller' y 'admin' solo se asignan por un admin a través de un endpoint protegido
+    const userRole = 'buyer';
 
     // Verificar si el usuario ya existe
     const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);

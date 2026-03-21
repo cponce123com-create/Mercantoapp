@@ -126,14 +126,19 @@ ordersRouter.post('/:id/cancel', authMiddleware, async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'), 10);
     const input = orderIdSchema.parse({ id });
-    const order = await ordersController.cancelOrder(input.id);
+    
+    // 1. Obtener la orden para verificar propiedad ANTES de cancelar
+    const order = await ordersController.getOrderById(input.id);
 
-    // Verify that the user owns this order or is an admin
+    // 2. Verificar que el usuario sea el dueño o admin
     if (order.user_id !== user.id && user.role !== 'admin') {
       return c.json({ success: false, error: 'No tienes permiso para cancelar esta orden' }, 403);
     }
 
-    return c.json({ success: true, data: order });
+    // 3. Solo entonces proceder a la cancelación
+    const cancelledOrder = await ordersController.cancelOrder(input.id);
+
+    return c.json({ success: true, data: cancelledOrder });
   } catch (error) {
     if (error instanceof AppError) {
       return c.json({ success: false, error: error.message }, error.statusCode);
