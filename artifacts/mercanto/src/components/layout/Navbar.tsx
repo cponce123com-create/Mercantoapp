@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { MapPin, Search, ShoppingCart, User, ChevronDown, Menu, X } from "lucide-react";
+import { MapPin, Search, ShoppingCart, User, ChevronDown, Menu, X, Loader } from "lucide-react";
 import { CATEGORIES } from "@/data/mock";
 import { cn } from "@/lib/utils";
 import { useCategory } from "@/lib/CategoryContext";
@@ -14,11 +14,53 @@ export function Navbar() {
   const { openCart, itemCount } = useCart();
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   // Hide regular navbar on admin page
   if (location.startsWith('/admin')) {
     return null;
   }
+
+  // Handle search logic
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.length >= 3) {
+        setIsSearching(true);
+        try {
+          const response = await fetch(`/api/products/search?q=${encodeURIComponent(searchQuery)}`);
+          const data = await response.json();
+          if (data.success) {
+            setSearchResults(data.data);
+            setShowResults(true);
+          }
+        } catch (error) {
+          console.error("Error searching products:", error);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+        setShowResults(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  // Close results when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <>
@@ -63,17 +105,64 @@ export function Navbar() {
           </button>
 
           {/* Search Bar */}
-          <div className="flex-1 max-w-2xl hidden sm:flex">
+          <div className="flex-1 max-w-2xl hidden sm:flex" ref={searchRef}>
             <div className="relative w-full group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search size={20} className="text-muted-foreground group-focus-within:text-primary transition-colors" aria-hidden="true" />
+                {isSearching ? (
+                  <Loader size={20} className="text-primary animate-spin" aria-hidden="true" />
+                ) : (
+                  <Search size={20} className="text-muted-foreground group-focus-within:text-primary transition-colors" aria-hidden="true" />
+                )}
               </div>
               <input
                 type="text"
-                placeholder="Buscar tiendas, productos, restaurantes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => searchQuery.length >= 3 && setShowResults(true)}
+                placeholder="Buscar productos..."
                 aria-label="Buscar en Mercanto"
                 className="w-full pl-11 pr-4 py-3.5 bg-muted/50 border-2 border-transparent hover:border-border hover:bg-muted focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-2xl text-sm transition-all duration-300 outline-none"
               />
+
+              {/* Search Results Dropdown */}
+              {showResults && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-border rounded-2xl shadow-xl overflow-hidden z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+                  {searchResults.length > 0 ? (
+                    <div className="max-h-[400px] overflow-y-auto py-2">
+                      {searchResults.map((product) => (
+                        <Link 
+                          key={product.id} 
+                          href={`/tienda/${product.store_id}`}
+                          onClick={() => setShowResults(false)}
+                          className="flex items-center gap-4 px-4 py-3 hover:bg-muted transition-colors cursor-pointer"
+                        >
+                          <div className="w-12 h-12 rounded-lg bg-muted flex-shrink-0 overflow-hidden border border-border">
+                            {product.image_url ? (
+                              <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                <Search size={20} />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-bold text-foreground truncate">{product.name}</h4>
+                            <p className="text-xs text-muted-foreground truncate">{product.description}</p>
+                          </div>
+                          <div className="text-sm font-bold text-primary">
+                            S/ {parseFloat(product.price).toFixed(2)}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center">
+                      <Search size={40} className="mx-auto text-muted-foreground/20 mb-3" />
+                      <p className="text-muted-foreground font-medium">No encontramos productos para "{searchQuery}"</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -126,18 +215,63 @@ export function Navbar() {
       </div>
 
       {/* Mobile Search (Shows only on very small screens) */}
-      <div className="sm:hidden px-4 pb-4">
+      <div className="sm:hidden px-4 pb-4 relative" ref={searchRef}>
         <div className="relative w-full group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search size={18} className="text-muted-foreground" aria-hidden="true" />
+            {isSearching ? (
+              <Loader size={18} className="text-primary animate-spin" aria-hidden="true" />
+            ) : (
+              <Search size={18} className="text-muted-foreground" aria-hidden="true" />
+            )}
           </div>
           <input
             type="text"
-            placeholder="Buscar en Mercanto..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => searchQuery.length >= 3 && setShowResults(true)}
+            placeholder="Buscar productos..."
             aria-label="Buscar en Mercanto (móvil)"
             className="w-full pl-10 pr-4 py-3 bg-muted/50 border-2 border-transparent focus:bg-white focus:border-primary rounded-xl text-sm transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
         </div>
+
+        {/* Mobile Search Results Dropdown */}
+        {showResults && (
+          <div className="absolute top-full left-4 right-4 mt-1 bg-white border border-border rounded-xl shadow-xl overflow-hidden z-[60]">
+            {searchResults.length > 0 ? (
+              <div className="max-h-[300px] overflow-y-auto py-1">
+                {searchResults.map((product) => (
+                  <Link 
+                    key={product.id} 
+                    href={`/tienda/${product.store_id}`}
+                    onClick={() => setShowResults(false)}
+                    className="flex items-center gap-3 px-3 py-2 hover:bg-muted transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-md bg-muted flex-shrink-0 overflow-hidden border border-border">
+                      {product.image_url ? (
+                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <Search size={16} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-bold text-foreground truncate">{product.name}</h4>
+                      <div className="text-xs font-bold text-primary">
+                        S/ {parseFloat(product.price).toFixed(2)}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                No hay resultados
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Category Navigation Pills */}

@@ -10,6 +10,20 @@ import { AppError } from '@/utils/types';
 
 const productsRouter = new Hono();
 
+// Search products
+productsRouter.get('/search', async (c) => {
+  try {
+    const query = c.req.query('q');
+    if (!query) {
+      return c.json({ success: true, data: [] });
+    }
+    const products = await productsController.searchProducts(query);
+    return c.json({ success: true, data: products });
+  } catch (error) {
+    return c.json({ success: false, error: 'Error al buscar productos' }, 500);
+  }
+});
+
 // List products by store
 productsRouter.get('/store/:storeId', async (c) => {
   try {

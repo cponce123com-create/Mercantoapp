@@ -1,4 +1,4 @@
-import { eq, and, desc, count } from 'drizzle-orm';
+import { eq, and, desc, count, sql, or } from 'drizzle-orm';
 import { getDb, products, Product, NewProduct, stores } from '@/db';
 import { AppError } from '@/utils/types';
 import type { CreateProductInput, UpdateProductInput, ListProductsInput } from '@/validators/products';
@@ -76,9 +76,9 @@ export const productsController = {
       conditions.push(eq(products.category, input.category));
     }
 
-    if (input.is_active !== undefined) {
-      conditions.push(eq(products.is_active, input.is_active));
-    }
+    // Por defecto solo mostrar productos activos si no se especifica lo contrario
+    const isActiveFilter = input.is_active !== undefined ? input.is_active : true;
+    conditions.push(eq(products.is_active, isActiveFilter));
 
     const result = await db
       .select()
@@ -135,7 +135,11 @@ export const productsController = {
     // Verify product exists
     await this.getProductById(id);
 
-    await db.delete(products).where(eq(products.id, id));
+    // Soft delete: set is_active to false
+    await db
+      .update(products)
+      .set({ is_active: false, updated_at: new Date() })
+      .where(eq(products.id, id));
   },
 
   async decreaseStock(productId: number, quantity: number): Promise<void> {
@@ -151,5 +155,29 @@ export const productsController = {
       .update(products)
       .set({ stock: product.stock - quantity })
       .where(eq(products.id, productId));
+  },
+
+  async searchProducts(query: string, limit: number = 20): Promise<Product[]> {
+    const db = getDb();
+    
+    // Búsqueda full-text usando PostgreSQL ilike como fallback si no hay índice GIN configurado aún
+    // o usando sql template para búsqueda más avanzada
+    const searchPattern = `%${query}%`;
+    
+    const result = await db
+      .select()
+      .from(products)
+      .where(
+        and(
+          eq(products.is_active, true),
+          or(
+            sql`${products.name} ILIKE ${searchPattern}`,
+            sql`${products.description} ILIKE ${searchPattern}`
+          )
+        )
+      )
+      .limit(limit);
+
+    return result;
   },
 };
