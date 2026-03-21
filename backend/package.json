@@ -14,6 +14,7 @@
     "db:studio": "drizzle-kit studio",
     "db:pilot": "tsx scripts/seed-pilot.ts",
     "db:seed:complete": "tsx scripts/seed-complete.ts",
+    "db:seed:30": "tsx scripts/seed-30-stores.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts",
